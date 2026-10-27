@@ -1,0 +1,114 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Alert, Autocomplete, Button, Chip, Paper, Stack, TextField, Typography } from '@mui/material'
+import { categoriesApi, pagesApi, postsApi, tagsApi } from '../../api/endpoints'
+import { useAsync } from '../../hooks/useAsync'
+import { ErrorView, Loading } from '../../components/StateViews'
+import RichTextEditor from '../../components/RichTextEditor'
+import MediaPicker from '../media/MediaPicker'
+import { useToast } from '../../app/Toast'
+import { slugify } from '../../utils/format'
+import type { Content, ContentInput, Taxonomy } from '../../types'
+import type { ContentKind } from './ContentListPage'
+
+interface Form { title: string; slug: string; content: string; summary: string; metaTitle: string; metaDescription: string; featuredImageId: number | null; featuredImageUrl: string | null; categories: Taxonomy[]; tags: Taxonomy[] }
+const blank: Form = { title: '', slug: '', content: '', summary: '', metaTitle: '', metaDescription: '', featuredImageId: null, featuredImageUrl: null, categories: [], tags: [] }
+
+export function validate(f: Pick<Form, 'title' | 'slug' | 'metaTitle' | 'metaDescription'>) {
+  const e: Record<string, string> = {}
+  if (!f.title.trim()) e.title = 'Title is required'
+  else if (f.title.length > 200) e.title = 'Title must be 200 characters or fewer'
+  if (f.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(f.slug)) e.slug = 'Use lowercase letters, numbers and single hyphens'
+  if (f.metaTitle.length > 200) e.metaTitle = 'Meta title must be 200 characters or fewer'
+  if (f.metaDescription.length > 400) e.metaDescription = 'Meta description must be 400 characters or fewer'
+  return e
+}
+
+export default function ContentEditPage({ kind }: { kind: ContentKind }) {
+  const api = kind === 'pages' ? pagesApi : postsApi
+  const { id } = useParams()
+  const isNew = !id
+  const nav = useNavigate()
+  const toast = useToast()
+  const [form, setForm] = useState<Form>(blank)
+  const [loaded, setLoaded] = useState<Content | null>(null)
+  const [slugTouched, setSlugTouched] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const existing = useAsync(() => (isNew ? Promise.resolve(null) : api.get(Number(id))), [kind, id])
+  const cats = useAsync(() => (kind === 'posts' ? categoriesApi.list() : Promise.resolve([] as Taxonomy[])), [kind])
+  const tags = useAsync(() => (kind === 'posts' ? tagsApi.list() : Promise.resolve([] as Taxonomy[])), [kind])
+
+  useEffect(() => {
+    const c = existing.data
+    if (!c) return
+    setLoaded(c); setSlugTouched(true)
+    setForm({ title: c.title, slug: c.slug, content: c.content, summary: (kind === 'pages' ? c.shortDescription : c.excerpt) ?? '', metaTitle: c.metaTitle ?? '', metaDescription: c.metaDescription ?? '', featuredImageId: c.featuredImageId ?? null, featuredImageUrl: c.featuredImageUrl ?? null, categories: c.categories, tags: c.tags })
+  }, [existing.data, kind])
+
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }))
+  const onTitle = (title: string) => setForm((f) => ({ ...f, title, slug: !slugTouched && isNew ? slugify(title) : f.slug }))
+
+  const save = async (e?: FormEvent, publish?: boolean) => {
+    e?.preventDefault()
+    if (saving) return // guards double submit
+    const v = validate(form); setErrors(v); setServerError(null)
+    if (Object.keys(v).length) return
+    const input: ContentInput = {
+      title: form.title.trim(), slug: form.slug || undefined, content: form.content, metaTitle: form.metaTitle || undefined, metaDescription: form.metaDescription || undefined,
+      featuredImageId: form.featuredImageId, concurrencyStamp: loaded?.concurrencyStamp,
+      ...(kind === 'pages' ? { shortDescription: form.summary } : { excerpt: form.summary, categoryIds: form.categories.map((c) => c.id), tagIds: form.tags.map((t) => t.id) }),
+    }
+    setSaving(true)
+    try {
+      let saved = isNew ? await api.create(input) : await api.update(Number(id), input)
+      if (publish !== undefined && (saved.status === 'Published') !== publish) saved = await (publish ? api.publish(saved.id) : api.unpublish(saved.id))
+      toast(publish === true ? 'Saved and published' : publish === false ? 'Saved and unpublished' : 'Saved')
+      if (isNew) nav(`/admin/${kind}/${saved.id}/edit`, { replace: true })
+      else setLoaded(saved)
+    } catch (err) { setServerError((err as Error).message) } finally { setSaving(false) }
+  }
+
+  if (!isNew && existing.loading) return <Loading />
+  if (existing.error) return <ErrorView message={existing.error} />
+  const noun = kind === 'pages' ? 'page' : 'post'
+  const published = loaded?.status === 'Published'
+
+  return (
+    <Stack component="form" spacing={2} onSubmit={save} noValidate aria-label={`${noun} form`}>
+      <Typography component="h1" variant="h4">{isNew ? `New ${noun}` : `Edit ${noun}`} {loaded && <Chip size="small" label={loaded.status} color={published ? 'success' : 'default'} />}</Typography>
+      {serverError && <Alert severity="error">{serverError}</Alert>}
+      <TextField label="Title" required value={form.title} onChange={(e) => onTitle(e.target.value)} error={!!errors.title} helperText={errors.title} />
+      <TextField label="Slug" value={form.slug} onChange={(e) => { setSlugTouched(true); set('slug', e.target.value) }} error={!!errors.slug}
+        helperText={errors.slug ?? 'Auto-generated from the title; existing slugs are preserved when editing.'} />
+      <RichTextEditor value={form.content} onChange={(h) => set('content', h)} />
+      <TextField label={kind === 'pages' ? 'Short description' : 'Excerpt'} multiline minRows={2} value={form.summary} onChange={(e) => set('summary', e.target.value)} />
+      {kind === 'posts' && <>
+        <Autocomplete multiple options={cats.data ?? []} value={form.categories} getOptionLabel={(o) => o.name} isOptionEqualToValue={(a, b) => a.id === b.id}
+          onChange={(_, v) => set('categories', v)} renderInput={(p) => <TextField {...p} label="Categories" />} />
+        <Autocomplete multiple options={tags.data ?? []} value={form.tags} getOptionLabel={(o) => o.name} isOptionEqualToValue={(a, b) => a.id === b.id}
+          onChange={(_, v) => set('tags', v)} renderInput={(p) => <TextField {...p} label="Tags" />} />
+      </>}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="subtitle1">Featured image</Typography>
+        {form.featuredImageUrl && <img src={form.featuredImageUrl} alt="Featured" style={{ maxWidth: 240, display: 'block', margin: '8px 0' }} />}
+        <Stack direction="row" spacing={1}>
+          <Button onClick={() => setPickerOpen(true)}>{form.featuredImageId ? 'Change image' : 'Select image'}</Button>
+          {form.featuredImageId && <Button color="error" onClick={() => { set('featuredImageId', null); set('featuredImageUrl', null) }}>Remove image</Button>}
+        </Stack>
+      </Paper>
+      <TextField label="Meta title" value={form.metaTitle} onChange={(e) => set('metaTitle', e.target.value)} error={!!errors.metaTitle} helperText={errors.metaTitle} />
+      <TextField label="Meta description" multiline minRows={2} value={form.metaDescription} onChange={(e) => set('metaDescription', e.target.value)} error={!!errors.metaDescription} helperText={errors.metaDescription} />
+      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+        <Button type="submit" variant="contained" disabled={saving}>{saving ? 'Saving…' : 'Save draft'}</Button>
+        {published
+          ? <Button variant="outlined" disabled={saving} onClick={() => save(undefined, false)}>Save &amp; unpublish</Button>
+          : <Button variant="outlined" color="success" disabled={saving} onClick={() => save(undefined, true)}>Save &amp; publish</Button>}
+        <Button onClick={() => nav(`/admin/${kind}`)}>Cancel</Button>
+      </Stack>
+      <MediaPicker open={pickerOpen} imagesOnly onClose={() => setPickerOpen(false)} onSelect={(m) => { set('featuredImageId', m.id); set('featuredImageUrl', m.url); setPickerOpen(false) }} />
+    </Stack>
+  )
+}

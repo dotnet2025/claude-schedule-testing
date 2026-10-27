@@ -1,0 +1,14 @@
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+uploads/
+node_modules/
+dist/
+coverage/
+.env
+*.user
+.vs/
+playwright-report/
+test-results/*.tmp

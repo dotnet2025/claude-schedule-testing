@@ -1,0 +1,21 @@
+:root { --accent: #2b50aa; --ink: #1c1f26; --muted: #5a6270; --bg: #fbfaf7; }
+.site { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--ink); font-family: Georgia, 'Times New Roman', serif; }
+.skip { position: absolute; left: -999px; } .skip:focus { left: 8px; top: 8px; background: #fff; padding: 8px; z-index: 10; }
+.site-header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #e3e0d8; }
+.brand { display: flex; align-items: center; gap: 8px; font-size: 1.4rem; font-weight: 700; color: var(--ink); text-decoration: none; }
+.site-header nav { display: flex; gap: 16px; flex: 1; flex-wrap: wrap; }
+.site-header nav a { color: var(--muted); text-decoration: none; } .site-header nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+.menu-btn { display: none; }
+.site-header input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; max-width: 100%; }
+main { flex: 1; width: 100%; max-width: 960px; margin: 0 auto; padding: 24px 16px; box-sizing: border-box; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
+.card { background: #fff; border: 1px solid #e3e0d8; border-radius: 8px; overflow: hidden; } .card img { width: 100%; height: 160px; object-fit: cover; }
+.card-body { padding: 16px; } .card a { color: var(--ink); text-decoration: none; } .card h2 { margin: 0 0 8px; font-size: 1.2rem; }
+.meta { color: var(--muted); font-size: .875rem; }
+.article img { max-width: 100%; height: auto; } .article table { border-collapse: collapse; max-width: 100%; display: block; overflow-x: auto; } .article td, .article th { border: 1px solid #ccc; padding: 4px 8px; }
+.pager { display: flex; gap: 8px; margin-top: 24px; justify-content: center; } .pager button { padding: 6px 12px; }
+.site-footer { border-top: 1px solid #e3e0d8; padding: 24px; text-align: center; color: var(--muted); }
+@media (max-width: 640px) {
+  .menu-btn { display: inline-block; margin-left: auto; } .site-header nav { display: none; width: 100%; flex-direction: column; } .site-header nav.open { display: flex; }
+  .site-header form { width: 100%; } .site-header input { width: 100%; box-sizing: border-box; }
+}
