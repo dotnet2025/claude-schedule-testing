@@ -1,5 +1,7 @@
 # Test execution summary
 
+> **Update 2026-10-27 (scheduled run):** the baseline was re-attempted. `npm install`/`npm ci` fail (registry host does not resolve, HTTP proxy blocks it), `dot.net` returns 403, and so backend build/test, frontend typecheck/lint/build/vitest and Playwright (including the UI redesign screenshots at 1920 to 320 px) are all **Not Run / Blocked**. New unit tests written for the redesign (ProfilePage, DataTable, brand contrast) are also unexecuted; automated frontend methods are now 28 + 6 = 34 written, 0 run.
+>
 > **Nothing has been executed.** The authoring environment had no .NET SDK, and `dot.net`, NuGet and the npm registry were unreachable (HTTP 403 / DNS failure), so the backend could not be compiled, the frontend dependencies could not be installed, and no test, build, lint, or migration command could run. All figures below are therefore *Not Run*. These are not passes.
 
 | Metric | Value |

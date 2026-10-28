@@ -36,6 +36,24 @@ cd frontend && npm run dev                    # http://localhost:5173  (proxies 
 ```
 Public site `/`, admin `/admin`, login `/login`.
 
+## UI design system & branding
+
+The admin UI and public site use a **single, centralised design system** built on **Material UI (MUI) v7** with a custom theme. No third-party admin template or paid/premium component is used.
+
+| Item | Detail |
+|---|---|
+| Library | `@mui/material`, `@mui/icons-material` (MIT licence, free for commercial use) with `@emotion/*` (MIT). Layout, theme and components are original code in this repository. |
+| Theme | `frontend/src/theme/theme.ts` (palette, typography, shape, shadows, button/input/table/dialog/chip overrides, 44px touch targets on coarse pointers, focus rings) |
+| Tokens | `frontend/src/theme/tokens.ts` (radii, shadows, layout sizes, transitions) |
+| Branding | **`frontend/src/theme/brand.ts`** is the only file to edit to re-brand: name, tagline, logo paths, colours, font. The public site reads the same colours through CSS variables set in `PublicLayout`. |
+| Reusable UX | `PageHeader`, `DataTable` (loading skeleton, error, empty state, sortable headers, pagination, horizontal scroll), `FilterBar`, `StatusChip`, `ConfirmDialog`, `ErrorPage` (403/404/500), `ErrorBoundary`, toasts, `BrandLogo` in `frontend/src/components/` |
+| Responsive | Permanent sidebar >= 900px, drawer below; tables scroll inside their card (never the page); forms and dashboard cards reflow; >= 44px touch targets on touch devices |
+| Accessibility | WCAG AA contrast for the palette (asserted by `src/theme/brand.test.ts`), skip links, visible focus, labelled controls and landmarks. Existing accessible names used by tests/Playwright were kept. |
+
+**Branding source and attribution.** Branding follows WeblineIndia (https://www.weblineindia.com/). The only colour taken from the official site is its published `theme-color` `#2196f3` (kept as the accent); primary/secondary/neutral shades are derived by us for AA contrast. **The official logo is NOT bundled**: it could not be downloaded from an authorised source in the build environment (see KI-013), so `frontend/public/brand/logo-placeholder*.svg` are clearly marked, replaceable placeholders (not an imitation of the real logo). To use the real logo, obtain it from WeblineIndia's brand assets, drop it in `frontend/public/brand/`, and change `logo.src` / `logo.srcLight` in `brand.ts`. WeblineIndia's logo and name remain their trademarks; confirm usage rights before publishing. The favicon (`public/favicon.svg`) is our own generic monogram.
+
+Design decisions: sidebar navy (`#0b1f3a`) for strong brand presence and contrast; cards with 1px borders and soft shadows instead of heavy elevation; pill chips for status; two-column content editor (content + publish/organise/image panels) collapsing to one column on tablets and phones; a new **My profile** page (`/admin/profile`) with change-password using `POST /api/auth/change-password`.
+
 ## Authorization matrix
 | Capability | Admin | Editor |
 |---|---|---|

@@ -5,10 +5,12 @@ import { useAsync } from '../../hooks/useAsync'
 import { useDocumentMeta } from '../../hooks/useDocumentMeta'
 import { ApiError } from '../../api/client'
 import { formatDate } from '../../utils/format'
+import ErrorPage from '../../components/ErrorPage'
+import { brand } from '../../theme'
 import type { Paged, PublicSummary } from '../../types'
 
 const Status = ({ loading, error, empty, children }: { loading: boolean; error: string | null; empty?: boolean; children: React.ReactNode }) =>
-  loading ? <p role="status">Loading…</p> : error ? <p role="alert">Something went wrong: {error}</p> : empty ? <p>Nothing here yet.</p> : <>{children}</>
+  loading ? <p role="status" className="status">Loading…</p> : error ? <p role="alert" className="status">Something went wrong: {error}</p> : empty ? <p className="status">Nothing here yet.</p> : <>{children}</>
 
 export function PostCards({ items }: { items: PublicSummary[] }) {
   return (
@@ -52,13 +54,20 @@ function PostList({ category, heading }: { category?: string; heading: string })
   )
 }
 
-export const HomePage = () => <PostList heading="Latest posts" />
+export const HomePage = () => (
+  <>
+    <section className="hero" aria-label="Welcome">
+      <div className="hero-inner"><p className="hero-title">{brand.tagline}</p><p className="hero-sub">News, insights and updates from {brand.name}.</p></div>
+    </section>
+    <PostList heading="Latest posts" />
+  </>
+)
 export const BlogPage = () => <PostList heading="Blog" />
 export function CategoryPage() { const { slug } = useParams(); return <PostList key={slug} category={slug} heading={`Category: ${slug}`} /> }
 
 export function NotFoundPage() {
   useDocumentMeta('Page not found')
-  return <><h1>404 – Page not found</h1><p>The page you requested does not exist. <Link to="/">Return home</Link>.</p></>
+  return <ErrorPage code={404} title="Page not found" message="The page you requested does not exist or may have been moved." />
 }
 
 function Article({ loader, slug, base }: { loader: (s: string) => ReturnType<typeof publicApi.post>; slug: string; base: string }) {
@@ -75,8 +84,8 @@ function Article({ loader, slug, base }: { loader: (s: string) => ReturnType<typ
           <p className="meta">{data.publishedAt ? formatDate(data.publishedAt) : ''}{data.author ? ` · ${data.author}` : ''}</p>
           {data.featuredImageUrl && <img src={data.featuredImageUrl} alt="" />}
           {/* Content is sanitised server-side with an allowlist before storage. */}
-          <div dangerouslySetInnerHTML={{ __html: data.content }} />
-          {data.categories.length > 0 && <p>{data.categories.map((c) => <Link key={c.id} to={`/category/${c.slug}`}>{c.name} </Link>)}</p>}
+          <div className="article-body" dangerouslySetInnerHTML={{ __html: data.content }} />
+          {data.categories.length > 0 && <p className="article-tags">{data.categories.map((c) => <Link key={c.id} to={`/category/${c.slug}`}>{c.name}</Link>)}</p>}
         </article>
       )}
     </Status>
@@ -89,7 +98,7 @@ export function PostDetailPage() {
   return (
     <>
       <Article loader={publicApi.post} slug={slug} base="/blog" />
-      {related.data && related.data.length > 0 && <section aria-label="Related posts"><h2>Related posts</h2><PostCards items={related.data} /></section>}
+      {related.data && related.data.length > 0 && <section aria-label="Related posts" className="related"><h2>Related posts</h2><PostCards items={related.data} /></section>}
     </>
   )
 }
@@ -104,7 +113,7 @@ export function SearchPage() {
     <>
       <h1>Search results{q ? ` for “${q}”` : ''}</h1>
       <Status loading={loading} error={error} empty={!q || !data || data.length === 0}>
-        <ul>{(data ?? []).map((r) => {
+        <ul className="search-results">{(data ?? []).map((r) => {
           const [kind, slug] = r.slug.split(/:(.+)/)
           return <li key={r.slug}><Link to={kind === 'page' ? `/pages/${slug}` : `/blog/${slug}`}>{r.title}</Link>{r.summary && <p>{r.summary}</p>}</li>
         })}</ul>

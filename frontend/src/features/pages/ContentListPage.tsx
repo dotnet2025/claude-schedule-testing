@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
-import { Box, Button, Chip, IconButton, MenuItem, Pagination, Stack, Table, TableBody, TableCell, TableHead, TableRow, TableSortLabel, TextField, Typography } from '@mui/material'
+import { Button, IconButton, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import SearchIcon from '@mui/icons-material/Search'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { pagesApi, postsApi } from '../../api/endpoints'
 import { useAsync, useDebounced } from '../../hooks/useAsync'
-import { Empty, ErrorView, Loading } from '../../components/StateViews'
+import DataTable, { type Column } from '../../components/DataTable'
+import PageHeader from '../../components/PageHeader'
+import FilterBar from '../../components/FilterBar'
+import StatusChip from '../../components/StatusChip'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToast } from '../../app/Toast'
 import { formatDate } from '../../utils/format'
@@ -39,46 +44,36 @@ export default function ContentListPage({ kind }: { kind: ContentKind }) {
     catch (e) { toast((e as Error).message, 'error') }
   }
 
-  return (
-    <Stack spacing={2}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography component="h1" variant="h4">{label}</Typography>
-        <Button component={RouterLink} to={`/admin/${kind}/new`} variant="contained">New {kind === 'pages' ? 'page' : 'post'}</Button>
+  const noun = kind === 'pages' ? 'page' : 'post'
+  const sortProp = (col: 'updated' | 'created') => ({ active: sortBy === col, direction: (desc ? 'desc' : 'asc') as 'asc' | 'desc', onClick: () => sort(col) })
+  const columns: Column<ContentSummary>[] = [
+    { key: 'title', header: 'Title', render: (c) => <><RouterLink to={`/admin/${kind}/${c.id}/edit`} style={{ fontWeight: 600 }}>{c.title}</RouterLink><Typography variant="caption" color="text.secondary" display="block">/{c.slug}</Typography></> },
+    { key: 'status', header: 'Status', render: (c) => <StatusChip label={c.status} /> },
+    { key: 'created', header: 'Created', hideBelow: 'md', sort: sortProp('created'), render: (c) => formatDate(c.createdAt) },
+    { key: 'updated', header: 'Updated', hideBelow: 'sm', sort: sortProp('updated'), render: (c) => formatDate(c.updatedAt) },
+    { key: 'actions', header: 'Actions', align: 'right', render: (c) => (
+      <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={0.5} sx={{ whiteSpace: 'nowrap' }}>
+        <Button size="small" onClick={() => toggle(c)}>{c.status === 'Published' ? 'Unpublish' : 'Publish'}</Button>
+        <IconButton component={RouterLink} to={`/admin/${kind}/${c.id}/edit`} aria-label={`Edit ${c.title}`}><EditIcon fontSize="small" /></IconButton>
+        <IconButton aria-label={`Delete ${c.title}`} color="error" onClick={() => setToDelete(c)}><DeleteIcon fontSize="small" /></IconButton>
       </Stack>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-        <TextField label={`Search ${kind}`} size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
-        <TextField select label="Status" size="small" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} sx={{ minWidth: 140 }}>
+    ) },
+  ]
+
+  return (
+    <>
+      <PageHeader title={label} subtitle={`Create, edit and publish your site ${kind}.`} breadcrumbs={[{ label: 'Dashboard', to: '/admin' }, { label }]}
+        actions={<Button component={RouterLink} to={`/admin/${kind}/new`} variant="contained" startIcon={<AddIcon />}>New {noun}</Button>} />
+      <FilterBar>
+        <TextField label={`Search ${kind}`} size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} sx={{ minWidth: { sm: 280 }, flex: { sm: 1 }, maxWidth: { sm: 420 } }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
+        <TextField select label="Status" size="small" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} sx={{ minWidth: 160 }}>
           <MenuItem value="">All</MenuItem><MenuItem value="Draft">Draft</MenuItem><MenuItem value="Published">Published</MenuItem>
         </TextField>
-      </Stack>
-      {loading ? <Loading /> : error ? <ErrorView message={error} /> : !data || data.items.length === 0 ? <Empty message={`No ${kind} found.`} /> : (
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead><TableRow>
-              <TableCell>Title</TableCell><TableCell>Status</TableCell>
-              <TableCell sortDirection={sortBy === 'created' ? (desc ? 'desc' : 'asc') : false}><TableSortLabel active={sortBy === 'created'} direction={desc ? 'desc' : 'asc'} onClick={() => sort('created')}>Created</TableSortLabel></TableCell>
-              <TableCell sortDirection={sortBy === 'updated' ? (desc ? 'desc' : 'asc') : false}><TableSortLabel active={sortBy === 'updated'} direction={desc ? 'desc' : 'asc'} onClick={() => sort('updated')}>Updated</TableSortLabel></TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow></TableHead>
-            <TableBody>
-              {data.items.map((c) => (
-                <TableRow key={c.id} hover>
-                  <TableCell><RouterLink to={`/admin/${kind}/${c.id}/edit`}>{c.title}</RouterLink><Typography variant="caption" display="block">/{c.slug}</Typography></TableCell>
-                  <TableCell><Chip size="small" label={c.status} color={c.status === 'Published' ? 'success' : 'default'} /></TableCell>
-                  <TableCell>{formatDate(c.createdAt)}</TableCell><TableCell>{formatDate(c.updatedAt)}</TableCell>
-                  <TableCell align="right">
-                    <Button size="small" onClick={() => toggle(c)}>{c.status === 'Published' ? 'Unpublish' : 'Publish'}</Button>
-                    <IconButton component={RouterLink} to={`/admin/${kind}/${c.id}/edit`} aria-label={`Edit ${c.title}`}><EditIcon fontSize="small" /></IconButton>
-                    <IconButton aria-label={`Delete ${c.title}`} color="error" onClick={() => setToDelete(c)}><DeleteIcon fontSize="small" /></IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
-      )}
-      {data && data.totalPages > 1 && <Pagination count={data.totalPages} page={page} onChange={(_, p) => setPage(p)} />}
-      <ConfirmDialog open={!!toDelete} busy={busy} title={`Delete ${kind === 'pages' ? 'page' : 'post'}?`} message={`"${toDelete?.title}" will be permanently deleted.`} onConfirm={remove} onCancel={() => setToDelete(null)} />
-    </Stack>
+      </FilterBar>
+      <DataTable columns={columns} rows={data?.items} getKey={(c) => c.id} loading={loading} error={error} onRetry={reload} caption={label}
+        emptyMessage={`No ${kind} found.`} page={page} totalPages={data?.totalPages} onPage={setPage} minWidth={560} />
+      <ConfirmDialog open={!!toDelete} busy={busy} title={`Delete ${noun}?`} message={`"${toDelete?.title}" will be permanently deleted.`} onConfirm={remove} onCancel={() => setToDelete(null)} />
+    </>
   )
 }

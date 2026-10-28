@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" role="img" aria-label="Logo placeholder">
+  <!-- REPLACEABLE PLACEHOLDER (light variant for dark backgrounds). Not the official WeblineIndia logo. -->
+  <rect x="1" y="1" width="46" height="46" rx="10" fill="#2196f3"/>
+  <path d="M14 33V15h6l4 9 4-9h6v18h-5V23l-3.5 7.5h-3L19 23v10z" fill="#fff"/>
+  <text x="58" y="31" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff">Your Logo</text>
+</svg>

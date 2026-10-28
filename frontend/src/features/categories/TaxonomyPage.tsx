@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { categoriesApi, tagsApi } from '../../api/endpoints'
 import { useAsync } from '../../hooks/useAsync'
-import { Empty, ErrorView, Loading } from '../../components/StateViews'
+import DataTable, { type Column } from '../../components/DataTable'
+import PageHeader from '../../components/PageHeader'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToast } from '../../app/Toast'
 import type { Taxonomy } from '../../types'
@@ -37,19 +39,24 @@ export default function TaxonomyPage({ kind }: { kind: 'categories' | 'tags' }) 
     try { await api.remove(toDelete.id); toast('Deleted'); setToDelete(null); reload() } catch (e) { toast((e as Error).message, 'error') } finally { setBusy(false) }
   }
 
+  const title = kind === 'categories' ? 'Categories' : 'Tags'
+  const columns: Column<Taxonomy>[] = [
+    { key: 'name', header: 'Name', render: (t) => t.name },
+    { key: 'slug', header: 'Slug', render: (t) => t.slug },
+    { key: 'posts', header: 'Posts', hideBelow: 'sm', render: (t) => t.postCount },
+    { key: 'actions', header: 'Actions', align: 'right', render: (t) => (
+      <Stack direction="row" justifyContent="flex-end" sx={{ whiteSpace: 'nowrap' }}>
+        <IconButton aria-label={`Edit ${t.name}`} onClick={() => open(t)}><EditIcon fontSize="small" /></IconButton>
+        <IconButton aria-label={`Delete ${t.name}`} color="error" onClick={() => setToDelete(t)}><DeleteIcon fontSize="small" /></IconButton>
+      </Stack>
+    ) },
+  ]
+
   return (
-    <Stack spacing={2}>
-      <Stack direction="row" justifyContent="space-between"><Typography component="h1" variant="h4" sx={{ textTransform: 'capitalize' }}>{kind}</Typography>
-        <Button variant="contained" onClick={() => open('new')}>New {noun}</Button></Stack>
-      {loading ? <Loading /> : error ? <ErrorView message={error} /> : !data || data.length === 0 ? <Empty message={`No ${kind} yet.`} /> : (
-        <Box sx={{ overflowX: 'auto' }}><Table size="small">
-          <TableHead><TableRow><TableCell>Name</TableCell><TableCell>Slug</TableCell><TableCell>Posts</TableCell><TableCell align="right">Actions</TableCell></TableRow></TableHead>
-          <TableBody>{data.map((t) => (
-            <TableRow key={t.id}><TableCell>{t.name}</TableCell><TableCell>{t.slug}</TableCell><TableCell>{t.postCount}</TableCell>
-              <TableCell align="right"><IconButton aria-label={`Edit ${t.name}`} onClick={() => open(t)}><EditIcon fontSize="small" /></IconButton>
-                <IconButton aria-label={`Delete ${t.name}`} color="error" onClick={() => setToDelete(t)}><DeleteIcon fontSize="small" /></IconButton></TableCell></TableRow>
-          ))}</TableBody></Table></Box>
-      )}
+    <>
+      <PageHeader title={title} subtitle={kind === 'categories' ? 'Group posts into topics.' : 'Label posts with keywords.'} breadcrumbs={[{ label: 'Dashboard', to: '/admin' }, { label: title }]}
+        actions={<Button variant="contained" startIcon={<AddIcon />} onClick={() => open('new')}>New {noun}</Button>} />
+      <DataTable columns={columns} rows={data} getKey={(t) => t.id} loading={loading} error={error} onRetry={reload} emptyMessage={`No ${kind} yet.`} caption={title} minWidth={440} />
       <Dialog open={!!editing} onClose={() => setEditing(null)} fullWidth maxWidth="xs">
         <DialogTitle>{editing === 'new' ? `New ${noun}` : `Edit ${noun}`}</DialogTitle>
         <DialogContent>
@@ -58,9 +65,9 @@ export default function TaxonomyPage({ kind }: { kind: 'categories' | 'tags' }) 
           <TextField label="Slug" fullWidth margin="dense" value={form.slug} helperText="Leave blank to generate from the name" onChange={(e) => setForm({ ...form, slug: e.target.value })} />
           {kind === 'categories' && <TextField label="Description" fullWidth margin="dense" multiline value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />}
         </DialogContent>
-        <DialogActions><Button onClick={() => setEditing(null)}>Cancel</Button><Button variant="contained" onClick={save} disabled={busy}>Save</Button></DialogActions>
+        <DialogActions><Button color="inherit" onClick={() => setEditing(null)}>Cancel</Button><Button variant="contained" onClick={save} disabled={busy}>Save</Button></DialogActions>
       </Dialog>
       <ConfirmDialog open={!!toDelete} busy={busy} title={`Delete ${noun}?`} message={`"${toDelete?.name}" will be removed from all posts. The posts themselves are kept.`} onConfirm={remove} onCancel={() => setToDelete(null)} />
-    </Stack>
+    </>
   )
 }

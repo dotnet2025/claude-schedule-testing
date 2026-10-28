@@ -11,8 +11,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       {children}
-      <Snackbar open={!!t} autoHideDuration={4000} onClose={() => setT(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        {t ? <Alert severity={t.severity} variant="filled" onClose={() => setT(null)} role="status">{t.msg}</Alert> : undefined}
+      <Snackbar open={!!t} autoHideDuration={t?.severity === 'error' ? 7000 : 4000} onClose={(_, reason) => { if (reason !== 'clickaway') setT(null) }} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        {t ? <Alert severity={t.severity} variant="filled" onClose={() => setT(null)} role="status" sx={{ boxShadow: 3, alignItems: 'center', minWidth: { sm: 320 } }}>{t.msg}</Alert> : undefined}
       </Snackbar>
     </Ctx.Provider>
   )

@@ -9,7 +9,8 @@ import { Table } from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
-import { Box, IconButton, MenuItem, Paper, Select, Stack, Tooltip } from '@mui/material'
+import { Box, Divider, IconButton, MenuItem, Paper, Select, Stack, Tooltip } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import FormatBold from '@mui/icons-material/FormatBold'
 import FormatItalic from '@mui/icons-material/FormatItalic'
 import FormatUnderlined from '@mui/icons-material/FormatUnderlined'
@@ -50,7 +51,7 @@ export default function RichTextEditor({ value, onChange, label = 'Content' }: P
   if (!editor) return null
   const btn = (title: string, icon: React.ReactNode, action: () => void, active = false) => (
     <Tooltip title={title} key={title}>
-      <IconButton size="small" aria-label={title} aria-pressed={active} color={active ? 'primary' : 'default'} onClick={action}>{icon}</IconButton>
+      <IconButton size="small" aria-label={title} aria-pressed={active} color={active ? 'primary' : 'default'} onClick={action} sx={{ borderRadius: 1.5, bgcolor: active ? (t) => alpha(t.palette.primary.main, 0.12) : 'transparent' }}>{icon}</IconButton>
     </Tooltip>
   )
   const setLink = () => {
@@ -63,9 +64,9 @@ export default function RichTextEditor({ value, onChange, label = 'Content' }: P
   const heading = editor.isActive('heading') ? String(editor.getAttributes('heading').level) : '0'
 
   return (
-    <Paper variant="outlined">
-      <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ p: 0.5, borderBottom: 1, borderColor: 'divider' }} role="toolbar" aria-label="Formatting">
-        <Select size="small" value={heading} inputProps={{ 'aria-label': 'Heading level' }} sx={{ mr: 1, minWidth: 120 }}
+    <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden', '&:focus-within': { borderColor: 'primary.main', boxShadow: (t) => `0 0 0 3px ${alpha(t.palette.primary.light, 0.25)}` } }}>
+      <Stack direction="row" flexWrap="wrap" alignItems="center" useFlexGap gap={0.25} sx={{ p: 1, borderBottom: 1, borderColor: 'divider', bgcolor: (t) => alpha(t.palette.primary.main, 0.03) }} role="toolbar" aria-label="Formatting">
+        <Select size="small" value={heading} inputProps={{ 'aria-label': 'Heading level' }} sx={{ mr: 1, minWidth: 130, '@media (pointer: coarse)': { minHeight: 44 } }}
           onChange={(e) => {
             const lvl = Number(e.target.value)
             if (lvl === 0) editor.chain().focus().setParagraph().run()
@@ -82,16 +83,24 @@ export default function RichTextEditor({ value, onChange, label = 'Content' }: P
         {btn('Numbered list', <FormatListNumbered />, () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
         {btn('Blockquote', <FormatQuote />, () => editor.chain().focus().toggleBlockquote().run(), editor.isActive('blockquote'))}
         {btn('Code block', <Code />, () => editor.chain().focus().toggleCodeBlock().run(), editor.isActive('codeBlock'))}
+        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
         {btn('Align left', <FormatAlignLeft />, () => editor.chain().focus().setTextAlign('left').run())}
         {btn('Align center', <FormatAlignCenter />, () => editor.chain().focus().setTextAlign('center').run())}
         {btn('Align right', <FormatAlignRight />, () => editor.chain().focus().setTextAlign('right').run())}
+        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
         {btn('Link', <LinkIcon />, setLink, editor.isActive('link'))}
         {btn('Insert table', <TableChart />, () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}
         {btn('Insert image from media library', <ImageIcon />, () => setPickerOpen(true))}
+        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
         {btn('Undo', <Undo />, () => editor.chain().focus().undo().run())}
         {btn('Redo', <Redo />, () => editor.chain().focus().redo().run())}
       </Stack>
-      <Box sx={{ p: 2, minHeight: 280, '& .cms-editor': { outline: 'none', minHeight: 250 }, '& table': { borderCollapse: 'collapse' }, '& td, & th': { border: '1px solid #ccc', p: 0.5 }, '& img': { maxWidth: '100%' } }}>
+      <Box sx={{ p: { xs: 1.5, sm: 2.5 }, minHeight: 320, bgcolor: 'background.paper', lineHeight: 1.7,
+        '& .cms-editor': { outline: 'none', minHeight: 280, overflowWrap: 'anywhere' },
+        '& .cms-editor h1, & .cms-editor h2, & .cms-editor h3': { lineHeight: 1.25 },
+        '& blockquote': { m: 0, pl: 2, borderLeft: 4, borderColor: 'primary.light', color: 'text.secondary' },
+        '& pre': { bgcolor: 'grey.100', p: 1.5, borderRadius: 1, overflowX: 'auto' },
+        '& table': { borderCollapse: 'collapse', maxWidth: '100%' }, '& td, & th': { border: 1, borderColor: 'divider', p: 0.75 }, '& img': { maxWidth: '100%', height: 'auto' } }}>
         <EditorContent editor={editor} />
       </Box>
       <MediaPicker open={pickerOpen} imagesOnly onClose={() => setPickerOpen(false)}

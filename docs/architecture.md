@@ -22,3 +22,19 @@ tests/                plans, case docs, results, Playwright e2e
 **Data model:** User, RefreshToken, Page, Post, Category, Tag, join tables `PostCategories`/`PostTags`, MediaFile, WebsiteSettings (single row, Id=1). Unique indexes: user email, page slug, post slug, category/tag name+slug, media stored name, refresh token hash. Media FKs from content/settings use `SET NULL`.
 
 **SEO:** pages set `<title>`, description and canonical client-side. Limitation: crawlers not executing JavaScript will not see per-page metadata. Remedies: prerender at publish time, Vite SSG, or SSR with a Node host.
+
+## Frontend design system (UI redesign)
+
+```
+frontend/src/theme/     brand.ts (single branding config) · tokens.ts · theme.ts (MUI theme + component overrides) · index.ts
+frontend/src/components PageHeader, DataTable, FilterBar, StatusChip, StateViews (Loading/Empty/ErrorView/TableSkeleton),
+                        ConfirmDialog, ErrorPage, ErrorBoundary, BrandLogo, RichTextEditor (themed toolbar + surface)
+frontend/src/layouts    AdminLayout (navy sidebar, permanent >= md / temporary drawer below, top bar with profile + sign out), PublicLayout (+ styles/public.css)
+frontend/src/features   dashboard, pages (list/edit), media, categories (taxonomy), users, settings, profile (new), auth, public
+```
+
+* `main.tsx` mounts `ThemeProvider(theme)`, `CssBaseline`, `ErrorBoundary` (500 screen), toasts and auth.
+* Screens never hard-code colours: they use theme palette keys (`primary.main`, `text.secondary`, ...) or `brand.colors` where a raw value is unavoidable (public CSS variables, gradients).
+* Listings share `DataTable`; headers share `PageHeader` (title is the page's only `<h1>`, breadcrumbs, actions).
+* Routing: new `/admin/profile`; admin unknown paths render an admin 404; unauthorised role renders a 403 `ErrorPage`; public unknown paths render the public 404.
+* Behaviour, API calls, validation and accessible names used by unit/e2e tests are unchanged.

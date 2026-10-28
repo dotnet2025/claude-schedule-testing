@@ -12,3 +12,4 @@ coverage/
 .vs/
 playwright-report/
 test-results/*.tmp
+*.tsbuildinfo

@@ -20,3 +20,6 @@ CI workflow `.github/workflows/ci.yml` (backend, frontend, e2e). Commits are on 
 
 ## 6. Maintenance
 Known issues, limitations and next steps: `docs/known-issues.md`.
+
+## 7. UI/UX redesign (Part B, 2026-10-27 scheduled run)
+Scope: centralised MUI design system, WeblineIndia branding via `src/theme/brand.ts`, redesign of every screen, new profile/change-password page, 403/404/500 pages, responsive layouts. Analysis found: default MUI theme with an inline `createTheme`, basic AppBar/Drawer layout, hand-rolled tables per page, minimal public CSS. Implementation reused the existing structure and kept APIs, validation and accessible names. **Verification status:** build, typecheck, lint, unit and e2e tests and screenshots were *Not Run* (npm registry and .NET SDK unreachable; KI-001, KI-002, KI-014, KI-015). Palette contrast was verified numerically (>= 5.1:1 for all text/background pairs used).

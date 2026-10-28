@@ -10,7 +10,11 @@ import MediaPage from '../features/media/MediaPage'
 import TaxonomyPage from '../features/categories/TaxonomyPage'
 import UsersPage from '../features/users/UsersPage'
 import SettingsPage from '../features/settings/SettingsPage'
+import ProfilePage from '../features/profile/ProfilePage'
+import ErrorPage from '../components/ErrorPage'
 import { BlogPage, CategoryPage, CmsPage, HomePage, NotFoundPage, PostDetailPage, SearchPage } from '../features/public/PublicPages'
+
+const AdminNotFound = () => <ErrorPage code={404} title="Page not found" message="The admin page you requested does not exist." home="/admin" homeLabel="Back to dashboard" />
 
 export default function App() {
   return (
@@ -28,11 +32,12 @@ export default function App() {
           <Route path="media" element={<MediaPage />} />
           <Route path="categories" element={<TaxonomyPage kind="categories" />} />
           <Route path="tags" element={<TaxonomyPage kind="tags" />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route element={<ProtectedRoute roles={['Admin']} />}>
             <Route path="users" element={<UsersPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<AdminNotFound />} />
         </Route>
       </Route>
       <Route element={<PublicLayout />}>
