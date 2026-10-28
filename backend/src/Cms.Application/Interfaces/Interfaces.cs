@@ -1,12 +1,15 @@
 using Cms.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Cms.Application.Interfaces;
 
 public interface IAppDbContext
 {
+    DatabaseFacade Database { get; }
     DbSet<User> Users { get; }
     DbSet<Company> Companies { get; }
+    DbSet<CompanyUser> CompanyUsers { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<Page> Pages { get; }
     DbSet<Post> Posts { get; }

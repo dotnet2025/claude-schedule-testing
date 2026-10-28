@@ -1,37 +1,58 @@
 # Test execution summary
 
-> **Nothing has been executed (run of 2026-10-27, Company Master / User Master).** This environment had no .NET SDK (`dot.net`, `builds.dotnet.microsoft.com`, NuGet and apt mirrors all return 403 / DNS failure) and the npm registry is blocked (`registry.npmjs.org` → 403 through the egress proxy; `npm ci` fails with ENOTFOUND/ENOTCACHED, leaving `node_modules` incomplete). The backend could not be compiled, the migration could not be generated or applied, and `typecheck`, `lint`, `build`, `vitest` and Playwright could not run. **Every figure below is Not Run/Blocked – there are no passes.**
->
-> The only check that was executed: a TypeScript *syntax-only* parse (`ts.transpileModule`, no type information) of all new/changed frontend and e2e files – 0 syntax errors. That is not a type-check and is not counted as a test result.
+## Company–User module run (scheduled run, 2026-10-27/28)
+Environment again had **no .NET SDK, no NuGet, no npm registry and no browser** (dot.net / NuGet / npm all unreachable). Result: **nothing was compiled or executed**; the backend, migration, frontend and every test below are *unverified*.
+
+| Item | Written | Executed | Result |
+|---|---|---|---|
+| xUnit integration tests (`CompanyUserTests.cs`) | 21 test methods (TC-CU-001..027, incl. parallel/concurrency and rollback) | 0 | Not Run (Blocked: no .NET SDK) |
+| Vitest/RTL/MSW (`companies/companyUsers.test.tsx`) | 9 tests (TC-CU-028 and UI parts of 001/002/015/016/022/023) | 0 | Not Run (Blocked: no npm) |
+| Playwright (`tests/e2e/company-users.spec.ts`) | 1 journey | 0 | Not Run (Blocked: no browser/toolchain) |
+| Existing regression suites (backend, frontend, e2e) | n/a | 0 | Not Run (Blocked) |
+| Typecheck / lint / build | - | 0 | Not Run |
+| EF migration `AddCompanyUserMapping` | hand-authored + hand-edited snapshot | not validated | Not Run |
+| Manual: TC-CU-029, TC-CU-030 | - | 0 | Not Run |
+
+The numbers in the older tables below predate this module and are unchanged (they exclude the 30 `TC-CU-*` cases).
+
+---
+
+> **Nothing has been executed.** The authoring environment had no .NET SDK, and `dot.net`, NuGet and the npm registry were unreachable (HTTP 403 / DNS failure), so the backend could not be compiled, the frontend dependencies could not be installed, and no test, build, lint, or migration command could run. All figures below are therefore *Not Run*. These are not passes.
 
 | Metric | Value |
 |---|---|
-| Total test cases documented (`tests/test-cases`) | 97 earlier + 27 Company Master + 38 User Master (the 6 old TC-USR cases were superseded) = 156 |
-| Automated test methods written (this run) | backend 40 xUnit methods/theories (UserMasterTests 23, CompanyMasterTests 17) + 21 frontend Vitest `it` blocks in 3 new files (CompaniesPage, UsersPage, AdminLayout) + 1 LoginPage + 3 Playwright |
-| Automated test methods in repo (approx.) | backend 61 methods, frontend ~57 `it`, Playwright 16 |
+| Total test cases designed (documented in `tests/test-cases`) | 97 |
+| Automated cases | 78 |
+| Manual cases | 19 |
+| Automated test methods written | 86 (backend 44 xUnit methods, frontend 28, Playwright 14) |
 | Executed | 0 |
 | Passed | 0 |
 | Failed | 0 |
-| Blocked | all automated methods (no .NET SDK / npm registry) |
-| Not run | all cases |
-| Backend coverage / frontend coverage | Not measured |
-| Defects identified by tests | None found, because nothing ran |
-| Defects found by self-review while authoring | existing tests used the removed `displayName`/PUT-role API and were updated; JWT lifetime gap (deactivated/demoted users kept valid access tokens) fixed with an `OnTokenValidated` DB check |
-| Unresolved issues | `docs/known-issues.md` (KI-001, KI-002, KI-013 migration hand-authored, KI-014) |
+| Blocked | 86 automated methods (no toolchain) |
+| Not run | 97 cases |
+| Backend coverage | Not measured |
+| Frontend coverage | Not measured |
+| Defects identified by tests | None found, because nothing ran. Code review of own output found/fixed: dynamic anonymous-type uniqueness check, JWT claim mapping |
+| Defects fixed | 2 (see above) |
+| Unresolved issues | See `docs/known-issues.md` |
 
-## Module breakdown (new/changed this run)
+## Module breakdown
 
 | Module | Designed | Automated | Executed | Result |
 |---|---|---|---|---|
-| Company Master | 27 | 25 (17 API, 7 UI, 1 e2e) | 0 | Not Run |
-| User Master | 38 | 36 (23 API, 11 UI, 3 e2e) | 0 | Not Run |
-| Manual only | TC-CMP-018/UI-008, TC-USR-024 (migration, responsive) | – | 0 | Not Run |
+| Authentication | 18 | 17 | 0 | Not Run |
+| Roles & permissions | 7 | 7 | 0 | Not Run |
+| Dashboard | 5 | 3 | 0 | Not Run |
+| Pages | 17 | 16 | 0 | Not Run |
+| Posts | 6 | 5 | 0 | Not Run |
+| Media | 13 | 10 | 0 | Not Run |
+| Categories & tags | 4 | 3 | 0 | Not Run |
+| Users | 6 | 4 | 0 | Not Run |
+| Settings | 4 | 2 | 0 | Not Run |
+| Public website / SEO / responsive | 9 | 7 | 0 | Not Run |
+| Security | 8 | 4 | 0 | Not Run |
 
-Earlier modules (authentication, authorization, dashboard, pages, posts, media, categories/tags, settings, public site, security) are unchanged and remain **Not Run**; some of their tests were edited only to use the new user-create payload (`firstName/lastName/username`) and the PATCH status/role endpoints – assertions were not weakened.
+Counts are derived from the case files; "automated" counts cases that map to at least one written test.
 
 ## How to produce real results
-1. `dotnet ef database update` on a clean DB and on a DB created from `InitialCreate` (see README → Database changes).
-2. `dotnet test backend/Cms.slnx --collect:"XPlat Code Coverage"`
-3. `cd frontend && npm ci && npm run typecheck && npm run lint && npm run build && npm run test -- --run`
-4. `cd tests/e2e && npm install && npx playwright install chromium && npx playwright test`
-Then replace this file with the runner output and update the `Status` fields in `tests/test-cases/*.md`.
+1. `dotnet test backend/Cms.slnx --collect:"XPlat Code Coverage"` 2. `cd frontend && npm install && npm run test:coverage` 3. start the e2e suite (see `tests/test-plan.md`). Then replace this file with the runner output and update the `Status` fields in `tests/test-cases/*.md`.

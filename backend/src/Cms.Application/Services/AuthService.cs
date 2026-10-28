@@ -9,19 +9,16 @@ namespace Cms.Application.Services;
 
 public class AuthService(IAppDbContext db, ITokenService tokens, IPasswordHasher<User> hasher)
 {
-    public static UserDto ToDto(User u) => new(u.Id, u.Email, u.Username, u.FirstName, u.LastName, u.DisplayName, u.Phone, u.Role, u.IsActive,
-        u.CompanyId, u.Company?.CompanyName, u.LastLoginAt, u.CreatedAt, u.UpdatedAt, u.CreatedById, u.UpdatedById);
+    public static UserDto ToDto(User u) => new(u.Id, u.Email, u.DisplayName, u.Role, u.IsActive, u.CreatedAt, u.FirstName, u.LastName, u.Username, u.Phone);
 
     public async Task<AuthResponse> LoginAsync(LoginRequest req, CancellationToken ct)
     {
-        var identifier = (req.Email ?? req.Username)?.Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(identifier)) throw new BadRequestException("Email or username is required.");
-        var user = await db.Users.Include(u => u.Company).FirstOrDefaultAsync(u => u.Email == identifier || u.Username == identifier, ct);
+        var email = req.Email.Trim().ToLowerInvariant();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
         // Same message for unknown user / bad password / inactive to avoid enumeration.
         if (user is null || !user.IsActive ||
             hasher.VerifyHashedPassword(user, user.PasswordHash, req.Password) == PasswordVerificationResult.Failed)
             throw new UnauthorizedException("Invalid email or password.");
-        user.LastLoginAt = DateTime.UtcNow;
         return await IssueAsync(user, ct);
     }
 
@@ -29,7 +26,7 @@ public class AuthService(IAppDbContext db, ITokenService tokens, IPasswordHasher
     {
         if (string.IsNullOrWhiteSpace(refreshToken)) throw new UnauthorizedException("Invalid refresh token.");
         var hash = tokens.HashToken(refreshToken);
-        var stored = await db.RefreshTokens.Include(r => r.User).ThenInclude(u => u!.Company).FirstOrDefaultAsync(r => r.TokenHash == hash, ct);
+        var stored = await db.RefreshTokens.Include(r => r.User).FirstOrDefaultAsync(r => r.TokenHash == hash, ct);
         if (stored?.User is null) throw new UnauthorizedException("Invalid refresh token.");
         if (stored.RevokedAt != null)
         {
@@ -55,7 +52,7 @@ public class AuthService(IAppDbContext db, ITokenService tokens, IPasswordHasher
 
     public async Task<UserDto> MeAsync(int userId, CancellationToken ct)
     {
-        var u = await db.Users.AsNoTracking().Include(x => x.Company).FirstOrDefaultAsync(x => x.Id == userId && x.IsActive, ct)
+        var u = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId && x.IsActive, ct)
             ?? throw new UnauthorizedException("User not found or inactive.");
         return ToDto(u);
     }

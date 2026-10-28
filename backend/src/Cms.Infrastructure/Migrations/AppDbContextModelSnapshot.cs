@@ -48,90 +48,6 @@ namespace Cms.Infrastructure.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("Cms.Domain.Entities.Company", b =>
-                {
-                    b.Property<int>("CompanyId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("AddressLine1")
-                        .HasMaxLength(250)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("AddressLine2")
-                        .HasMaxLength(250)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CompanyCode")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Country")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("LogoMediaId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(25)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PostalCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("State")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Website")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("CompanyId");
-
-                    b.HasIndex("CompanyCode")
-                        .IsUnique();
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LogoMediaId");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.ToTable("Companies");
-                });
-
             modelBuilder.Entity("Cms.Domain.Entities.MediaFile", b =>
                 {
                     b.Property<int>("Id")
@@ -379,13 +295,56 @@ namespace Cms.Infrastructure.Migrations
                     b.ToTable("Tags");
                 });
 
-            modelBuilder.Entity("Cms.Domain.Entities.User", b =>
+            modelBuilder.Entity("Cms.Domain.Entities.Company", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("CompanyId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("CompanyId")
+                    b.Property<string>("CompanyCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("CreatedById")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("CompanyId");
+
+                    b.HasIndex("CompanyCode")
+                        .IsUnique();
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("Companies");
+                });
+
+            modelBuilder.Entity("Cms.Domain.Entities.CompanyUser", b =>
+                {
+                    b.Property<int>("CompanyUserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CompanyId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
@@ -393,6 +352,49 @@ namespace Cms.Infrastructure.Migrations
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPrimaryCompany")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("CompanyUserId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_CompanyUsers_OnePrimaryPerUser")
+                        .HasFilter("\"IsPrimaryCompany\" = 1 AND \"IsActive\" = 1");
+
+                    b.HasIndex("CompanyId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("CompanyUsers");
+                });
+
+            modelBuilder.Entity("Cms.Domain.Entities.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -411,9 +413,6 @@ namespace Cms.Infrastructure.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -436,9 +435,6 @@ namespace Cms.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("UpdatedById")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -446,14 +442,8 @@ namespace Cms.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
-
-                    b.HasIndex("CreatedById");
-
                     b.HasIndex("Email")
                         .IsUnique();
-
-                    b.HasIndex("UpdatedById");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -538,30 +528,6 @@ namespace Cms.Infrastructure.Migrations
                     b.HasIndex("TagsId");
 
                     b.ToTable("PostTags");
-                });
-
-            modelBuilder.Entity("Cms.Domain.Entities.Company", b =>
-                {
-                    b.HasOne("Cms.Domain.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Cms.Domain.Entities.MediaFile", "LogoMedia")
-                        .WithMany()
-                        .HasForeignKey("LogoMediaId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Cms.Domain.Entities.User", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LogoMedia");
-
-                    b.Navigation("UpdatedBy");
                 });
 
             modelBuilder.Entity("Cms.Domain.Entities.MediaFile", b =>
@@ -676,33 +642,51 @@ namespace Cms.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Cms.Domain.Entities.User", b =>
+            modelBuilder.Entity("Cms.Domain.Entities.Company", b =>
                 {
-                    b.HasOne("Cms.Domain.Entities.Company", "Company")
-                        .WithMany("Users")
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Cms.Domain.Entities.User", "CreatedBy")
+                    b.HasOne("Cms.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Cms.Domain.Entities.User", "UpdatedBy")
+                    b.HasOne("Cms.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Cms.Domain.Entities.CompanyUser", b =>
+                {
+                    b.HasOne("Cms.Domain.Entities.Company", "Company")
+                        .WithMany("CompanyUsers")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Cms.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Cms.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Cms.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Company");
 
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("UpdatedBy");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Cms.Domain.Entities.Company", b =>
                 {
-                    b.Navigation("Users");
+                    b.Navigation("CompanyUsers");
                 });
 
             modelBuilder.Entity("Cms.Domain.Entities.User", b =>

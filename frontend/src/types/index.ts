@@ -1,19 +1,14 @@
 export type Role = 'Admin' | 'Editor'
-export interface User {
-  id: number; email: string; username?: string; firstName?: string; lastName?: string; displayName: string; phone?: string | null
-  role: Role; isActive: boolean; companyId?: number | null; companyName?: string | null; lastLoginAt?: string | null
-  createdAt?: string; updatedAt?: string; createdById?: number | null; updatedById?: number | null
+export interface User { id: number; email: string; displayName: string; role: Role; isActive: boolean; createdAt?: string; firstName?: string; lastName?: string; username?: string; phone?: string | null }
+export interface Company { companyId: number; companyCode: string; companyName: string; isActive: boolean; createdAt: string; updatedAt: string; activeUserCount: number }
+export interface CompanyUser {
+  companyUserId: number; companyId: number; companyCode: string; companyName: string; companyIsActive: boolean
+  userId: number; userName: string; username: string; email: string; phone?: string | null; systemRole: Role; userIsActive: boolean
+  isActive: boolean; isPrimaryCompany: boolean; createdAt: string; updatedAt: string
 }
-export interface UserInput {
-  firstName: string; lastName: string; username: string; email: string; phone?: string | null; companyId?: number | null
-}
-export interface Company {
-  companyId: number; companyCode: string; companyName: string; email?: string | null; phone?: string | null; website?: string | null
-  addressLine1?: string | null; addressLine2?: string | null; city?: string | null; state?: string | null; country?: string | null; postalCode?: string | null
-  logoMediaId?: number | null; logoUrl?: string | null; isActive: boolean; createdAt: string; updatedAt: string
-  createdById?: number | null; createdByName?: string | null; updatedById?: number | null; updatedByName?: string | null; userCount: number
-}
-export type CompanyInput = Omit<Company, 'companyId' | 'logoUrl' | 'createdAt' | 'updatedAt' | 'createdById' | 'createdByName' | 'updatedById' | 'updatedByName' | 'userCount'>
+export interface UserCompany { companyUserId: number; companyId: number; companyCode: string; companyName: string; companyIsActive: boolean; isActive: boolean; isPrimaryCompany: boolean; createdAt: string }
+export interface CreateCompanyUserInput { firstName: string; lastName: string; username: string; email: string; phone?: string; role: string; password: string; isActive: boolean; isPrimaryCompany: boolean }
+export interface CreatedCompanyUserResult { user: User; assignment: CompanyUser }
 export interface AuthResponse { accessToken: string; expiresAt: string; refreshToken: string; user: User }
 export interface Paged<T> { items: T[]; total: number; page: number; pageSize: number; totalPages: number }
 export interface Taxonomy { id: number; name: string; slug: string; description?: string | null; postCount: number }

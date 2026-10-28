@@ -1,15 +1,16 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppBar, Box, Breadcrumbs, Button, Divider, Drawer, IconButton, List, ListItemButton, ListItemText, ListSubheader, Toolbar, Typography, Link } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import { useAuth } from '../app/AuthContext'
 
 const WIDTH = 220
-const masters = [{ to: '/admin/masters/companies', label: 'Company Master' }, { to: '/admin/masters/users', label: 'User Master' }]
-const items = [
+const items: { to: string; label: string; end?: boolean; admin?: boolean; group?: string }[] = [
   { to: '/admin', label: 'Dashboard', end: true }, { to: '/admin/pages', label: 'Pages' }, { to: '/admin/posts', label: 'Posts' },
   { to: '/admin/media', label: 'Media' }, { to: '/admin/categories', label: 'Categories' }, { to: '/admin/tags', label: 'Tags' },
-  { to: '/admin/settings', label: 'Settings', admin: true },
+  { to: '/admin/masters/companies', label: 'Company Master', admin: true, group: 'Masters' },
+  { to: '/admin/masters/users', label: 'User Master', admin: true, group: 'Masters' },
+  { to: '/admin/masters/company-users', label: 'Company Users', admin: true, group: 'Masters' }, { to: '/admin/settings', label: 'Settings', admin: true },
 ]
 
 export default function AdminLayout() {
@@ -24,18 +25,16 @@ export default function AdminLayout() {
       <Toolbar><Typography variant="h6">CMS Admin</Typography></Toolbar>
       <Divider />
       <List>
-        {items.filter((i) => !i.admin || user?.role === 'Admin').map((i) => {
+        {items.filter((i) => !i.admin || user?.role === 'Admin').map((i, idx, arr) => {
+          const heading = i.group && arr[idx - 1]?.group !== i.group
           const selected = i.end ? loc.pathname === i.to : loc.pathname.startsWith(i.to)
-          return <ListItemButton key={i.to} component={RouterLink} to={i.to} selected={selected} onClick={() => setOpen(false)} aria-current={selected ? 'page' : undefined}><ListItemText primary={i.label} /></ListItemButton>
+          return (
+            <Fragment key={i.to}>
+              {heading && <ListSubheader component="div" sx={{ lineHeight: '32px' }}>{i.group}</ListSubheader>}
+              <ListItemButton component={RouterLink} to={i.to} selected={selected} onClick={() => setOpen(false)} aria-current={selected ? 'page' : undefined} sx={i.group ? { pl: 4 } : undefined}><ListItemText primary={i.label} /></ListItemButton>
+            </Fragment>
+          )
         })}
-        {user?.role === 'Admin' && (
-          <List subheader={<ListSubheader component="div" disableSticky>Masters</ListSubheader>} aria-label="Masters" disablePadding>
-            {masters.map((i) => {
-              const selected = loc.pathname.startsWith(i.to)
-              return <ListItemButton key={i.to} component={RouterLink} to={i.to} selected={selected} onClick={() => setOpen(false)} aria-current={selected ? 'page' : undefined} sx={{ pl: 3 }}><ListItemText primary={i.label} /></ListItemButton>
-            })}
-          </List>
-        )}
         <ListItemButton component={RouterLink} to="/" target="_blank"><ListItemText primary="View site" /></ListItemButton>
       </List>
     </Box>

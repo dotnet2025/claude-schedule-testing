@@ -35,6 +35,7 @@ public static class InfrastructureExtensions
         s.AddScoped<MediaService>();
         s.AddScoped<UserService>();
         s.AddScoped<CompanyService>();
+        s.AddScoped<CompanyUserService>();
         s.AddScoped<SettingsService>();
         s.AddScoped<DashboardService>();
         s.AddScoped<PublicService>();

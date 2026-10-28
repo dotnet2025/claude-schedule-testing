@@ -8,8 +8,10 @@ import ContentListPage from '../features/pages/ContentListPage'
 import ContentEditPage from '../features/pages/ContentEditPage'
 import MediaPage from '../features/media/MediaPage'
 import TaxonomyPage from '../features/categories/TaxonomyPage'
-import UsersPage from '../features/masters/UsersPage'
-import CompaniesPage from '../features/masters/CompaniesPage'
+import UsersPage from '../features/users/UsersPage'
+import CompaniesPage from '../features/companies/CompaniesPage'
+import CompanyDetailsPage from '../features/companies/CompanyDetailsPage'
+import CompanyUserList from '../features/companies/CompanyUserList'
 import SettingsPage from '../features/settings/SettingsPage'
 import { BlogPage, CategoryPage, CmsPage, HomePage, NotFoundPage, PostDetailPage, SearchPage } from '../features/public/PublicPages'
 
@@ -30,10 +32,12 @@ export default function App() {
           <Route path="categories" element={<TaxonomyPage kind="categories" />} />
           <Route path="tags" element={<TaxonomyPage kind="tags" />} />
           <Route element={<ProtectedRoute roles={['Admin']} />}>
-            <Route path="masters" element={<Navigate to="/admin/masters/companies" replace />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="masters" element={<Navigate to="companies" replace />} />
             <Route path="masters/companies" element={<CompaniesPage />} />
+            <Route path="masters/companies/:id" element={<CompanyDetailsPage />} />
             <Route path="masters/users" element={<UsersPage />} />
-            <Route path="users" element={<Navigate to="/admin/masters/users" replace />} />
+            <Route path="masters/company-users" element={<CompanyUserList />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

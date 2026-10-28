@@ -28,6 +28,81 @@ public class HtmlSanitizerService : IHtmlSanitizerService
     public string Sanitize(string? html) => string.IsNullOrEmpty(html) ? "" : _s.Sanitize(html);
 }
 
+public class UserService(IAppDbContext db, IPasswordHasher<User> hasher, AuthService auth)
+{
+    public async Task<PagedResult<UserDto>> ListAsync(string? search, int page, int pageSize, CancellationToken ct)
+    {
+        var (p, s) = Paging.Normalize(page, pageSize);
+        var q = db.Users.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search)) { var t = search.Trim().ToLower(); q = q.Where(u => u.Email.Contains(t) || u.DisplayName.ToLower().Contains(t)); }
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderBy(u => u.Email).Skip((p - 1) * s).Take(s).ToListAsync(ct);
+        return new(items.Select(AuthService.ToDto).ToList(), total, p, s);
+    }
+
+    public async Task<UserDto> CreateAsync(CreateUserRequest r, CancellationToken ct)
+    {
+        var name = r.DisplayName.Trim();
+        var space = name.IndexOf(' ');
+        var first = space > 0 ? name[..space] : name;
+        var last = space > 0 ? name[(space + 1)..].Trim() : "";
+        var email = r.Email.Trim().ToLowerInvariant();
+        return AuthService.ToDto(await CreateEntityAsync(email, first, last, email, null, r.Password, r.Role, true, null, ct));
+    }
+
+    /// <summary>
+    /// The single place where users are created (validation, uniqueness, password hashing). Saves changes but does NOT open a
+    /// transaction, so callers (e.g. CompanyUserService) can wrap it in their own transaction and roll back together.
+    /// </summary>
+    public async Task<User> CreateEntityAsync(string email, string firstName, string lastName, string username, string? phone,
+        string password, string role, bool isActive, int? actingUserId, CancellationToken ct)
+    {
+        if (!Roles.All.Contains(role)) throw new BadRequestException("Role must be Admin or Editor.");
+        PasswordRules.Validate(password);
+        email = email.Trim().ToLowerInvariant();
+        username = username.Trim().ToLowerInvariant();
+        if (await db.Users.AnyAsync(u => u.Email == email, ct)) throw new ConflictException("A user with this email already exists.");
+        if (await db.Users.AnyAsync(u => u.Username == username, ct)) throw new ConflictException("A user with this username already exists.");
+        var u = new User
+        {
+            Email = email, FirstName = firstName.Trim(), LastName = lastName.Trim(), Username = username,
+            Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(), Role = role, IsActive = isActive,
+        };
+        u.DisplayName = $"{u.FirstName} {u.LastName}".Trim();
+        u.PasswordHash = hasher.HashPassword(u, password);
+        db.Users.Add(u); await db.SaveChangesAsync(ct);
+        return u;
+    }
+
+    public async Task<UserDto> UpdateAsync(int id, UpdateUserRequest r, CancellationToken ct)
+    {
+        if (!Roles.All.Contains(r.Role)) throw new BadRequestException("Role must be Admin or Editor.");
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == id, ct) ?? throw new NotFoundException("User not found.");
+        var losesAdmin = u.Role == Roles.Admin && u.IsActive && (r.Role != Roles.Admin || !r.IsActive);
+        if (losesAdmin) await EnsureAnotherAdmin(id, ct);
+        u.DisplayName = r.DisplayName.Trim(); u.Role = r.Role; u.IsActive = r.IsActive;
+        if (!string.IsNullOrEmpty(r.NewPassword)) { PasswordRules.Validate(r.NewPassword); u.PasswordHash = hasher.HashPassword(u, r.NewPassword); }
+        await db.SaveChangesAsync(ct);
+        if (!u.IsActive || !string.IsNullOrEmpty(r.NewPassword)) await auth.RevokeAllAsync(id, ct);
+        return AuthService.ToDto(u);
+    }
+
+    public async Task DeleteAsync(int id, int? actingUserId, CancellationToken ct)
+    {
+        if (id == actingUserId) throw new BadRequestException("You cannot delete your own account.");
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == id, ct) ?? throw new NotFoundException("User not found.");
+        if (u.Role == Roles.Admin && u.IsActive) await EnsureAnotherAdmin(id, ct);
+        db.Users.Remove(u);
+        await db.SaveChangesAsync(ct);
+    }
+
+    private async Task EnsureAnotherAdmin(int excludingId, CancellationToken ct)
+    {
+        if (!await db.Users.AnyAsync(x => x.Id != excludingId && x.Role == Roles.Admin && x.IsActive, ct))
+            throw new ConflictException("The last active Admin cannot be demoted, deactivated or deleted.");
+    }
+}
+
 public class SettingsService(IAppDbContext db)
 {
     public async Task<SettingsDto> GetAsync(CancellationToken ct)

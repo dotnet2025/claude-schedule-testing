@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Company> Companies => Set<Company>();
+    public DbSet<CompanyUser> CompanyUsers => Set<CompanyUser>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Page> Pages => Set<Page>();
     public DbSet<Post> Posts => Set<Post>();
@@ -23,16 +24,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => x.Email).IsUnique();
             e.Property(x => x.Email).HasMaxLength(256).IsRequired();
             e.Property(x => x.DisplayName).HasMaxLength(100).IsRequired();
-            e.Property(x => x.Role).HasMaxLength(20).IsRequired();
-            e.Property(x => x.PasswordHash).IsRequired();
-            e.HasIndex(x => x.Username).IsUnique();
-            e.Property(x => x.Username).HasMaxLength(100).IsRequired();
             e.Property(x => x.FirstName).HasMaxLength(100).IsRequired();
             e.Property(x => x.LastName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Username).HasMaxLength(100).IsRequired();
             e.Property(x => x.Phone).HasMaxLength(25);
-            e.HasOne(x => x.Company).WithMany(c => c.Users).HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.SetNull);
-            e.HasOne(x => x.CreatedBy).WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.SetNull);
-            e.HasOne(x => x.UpdatedBy).WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => x.Username).IsUnique();
+            e.Property(x => x.Role).HasMaxLength(20).IsRequired();
+            e.Property(x => x.PasswordHash).IsRequired();
         });
         b.Entity<Company>(e =>
         {
@@ -40,18 +38,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => x.CompanyCode).IsUnique();
             e.Property(x => x.CompanyCode).HasMaxLength(30).IsRequired();
             e.Property(x => x.CompanyName).HasMaxLength(200).IsRequired();
-            e.Property(x => x.Email).HasMaxLength(256);
-            e.Property(x => x.Phone).HasMaxLength(25);
-            e.Property(x => x.Website).HasMaxLength(500);
-            e.Property(x => x.AddressLine1).HasMaxLength(250);
-            e.Property(x => x.AddressLine2).HasMaxLength(250);
-            e.Property(x => x.City).HasMaxLength(100);
-            e.Property(x => x.State).HasMaxLength(100);
-            e.Property(x => x.Country).HasMaxLength(100);
-            e.Property(x => x.PostalCode).HasMaxLength(20);
-            e.HasOne(x => x.LogoMedia).WithMany().HasForeignKey(x => x.LogoMediaId).OnDelete(DeleteBehavior.SetNull);
-            e.HasOne(x => x.CreatedBy).WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.SetNull);
-            e.HasOne(x => x.UpdatedBy).WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<CompanyUser>(e =>
+        {
+            e.HasKey(x => x.CompanyUserId);
+            e.HasIndex(x => new { x.CompanyId, x.UserId }).IsUnique();
+            // DB-level business rule: at most ONE active primary mapping per user.
+            e.HasIndex(x => x.UserId).IsUnique().HasDatabaseName("UX_CompanyUsers_OnePrimaryPerUser")
+                .HasFilter("\"IsPrimaryCompany\" = 1 AND \"IsActive\" = 1");
+            e.HasOne(x => x.Company).WithMany(c => c.CompanyUsers).HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.SetNull);
         });
         b.Entity<RefreshToken>(e =>
         {

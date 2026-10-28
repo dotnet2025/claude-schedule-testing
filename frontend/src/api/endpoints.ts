@@ -1,5 +1,5 @@
 import { api, qs } from './client'
-import type { AuthResponse, Content, ContentInput, ContentSummary, Dashboard, Media, Paged, PublicContent, PublicSummary, Settings, Taxonomy, User, UserInput, Company, CompanyInput } from '../types'
+import type { AuthResponse, Company, CompanyUser, CreateCompanyUserInput, CreatedCompanyUserResult, UserCompany, Content, ContentInput, ContentSummary, Dashboard, Media, Paged, PublicContent, PublicSummary, Settings, Taxonomy, User } from '../types'
 
 export const authApi = {
   login: (email: string, password: string) => api<AuthResponse>('/api/auth/login', { method: 'POST', json: { email, password } }),
@@ -36,26 +36,11 @@ export const mediaApi = {
   remove: (id: number) => api<void>(`/api/media/${id}`, { method: 'DELETE' }),
 }
 
-export type UserListParams = { search?: string; role?: string; isActive?: boolean; companyId?: number; sortBy?: string; sortDir?: 'asc' | 'desc'; page?: number; pageSize?: number }
 export const usersApi = {
-  list: (p: UserListParams) => api<Paged<User>>(`/api/users${qs(p)}`),
-  get: (id: number) => api<User>(`/api/users/${id}`),
-  create: (d: UserInput & { password: string; role: string; isActive?: boolean }) => api<User>('/api/users', { method: 'POST', json: d }),
-  update: (id: number, d: UserInput) => api<User>(`/api/users/${id}`, { method: 'PUT', json: d }),
-  setStatus: (id: number, isActive: boolean) => api<User>(`/api/users/${id}/status`, { method: 'PATCH', json: { isActive } }),
-  setRole: (id: number, role: string) => api<User>(`/api/users/${id}/role`, { method: 'PATCH', json: { role } }),
-  resetPassword: (id: number, newPassword: string) => api<void>(`/api/users/${id}/reset-password`, { method: 'POST', json: { newPassword } }),
+  list: (p: { search?: string; page?: number; pageSize?: number }) => api<Paged<User>>(`/api/users${qs(p)}`),
+  create: (d: { email: string; displayName: string; password: string; role: string }) => api<User>('/api/users', { method: 'POST', json: d }),
+  update: (id: number, d: { displayName: string; role: string; isActive: boolean; newPassword?: string }) => api<User>(`/api/users/${id}`, { method: 'PUT', json: d }),
   remove: (id: number) => api<void>(`/api/users/${id}`, { method: 'DELETE' }),
-}
-
-export type CompanyListParams = { search?: string; isActive?: boolean; sortBy?: string; sortDir?: 'asc' | 'desc'; page?: number; pageSize?: number }
-export const companiesApi = {
-  list: (p: CompanyListParams) => api<Paged<Company>>(`/api/companies${qs(p)}`),
-  get: (id: number) => api<Company>(`/api/companies/${id}`),
-  create: (d: CompanyInput) => api<Company>('/api/companies', { method: 'POST', json: d }),
-  update: (id: number, d: CompanyInput) => api<Company>(`/api/companies/${id}`, { method: 'PUT', json: d }),
-  setStatus: (id: number, isActive: boolean) => api<Company>(`/api/companies/${id}/status`, { method: 'PATCH', json: { isActive } }),
-  remove: (id: number) => api<void>(`/api/companies/${id}`, { method: 'DELETE' }),
 }
 
 export const settingsApi = {
@@ -71,4 +56,26 @@ export const publicApi = {
   pages: () => api<Paged<PublicSummary>>('/api/public/pages?pageSize=50'),
   page: (slug: string) => api<PublicContent>(`/api/public/pages/${encodeURIComponent(slug)}`),
   search: (q: string) => api<PublicSummary[]>(`/api/public/search${qs({ q })}`),
+}
+
+export type CompanyUserQuery = {
+  search?: string; companyId?: number; userId?: number; userIsActive?: boolean; assignmentIsActive?: boolean
+  sortBy?: string; desc?: boolean; page?: number; pageSize?: number
+}
+export const companiesApi = {
+  list: (p: { search?: string; isActive?: boolean; page?: number; pageSize?: number }) => api<Paged<Company>>(`/api/companies${qs(p)}`),
+  get: (id: number) => api<Company>(`/api/companies/${id}`),
+  create: (d: { companyCode: string; companyName: string; isActive: boolean }) => api<Company>('/api/companies', { method: 'POST', json: d }),
+  update: (id: number, d: { companyCode: string; companyName: string; isActive: boolean }) => api<Company>(`/api/companies/${id}`, { method: 'PUT', json: d }),
+  users: (id: number, p: { search?: string; assignmentIsActive?: boolean; page?: number; pageSize?: number }) => api<Paged<CompanyUser>>(`/api/companies/${id}/users${qs(p)}`),
+  createUser: (id: number, d: CreateCompanyUserInput) => api<CreatedCompanyUserResult>(`/api/companies/${id}/users`, { method: 'POST', json: d }),
+  assignExisting: (id: number, d: { userId: number; isActive: boolean; isPrimaryCompany: boolean }) => api<CompanyUser>(`/api/companies/${id}/users/assign`, { method: 'POST', json: d }),
+}
+export const companyUsersApi = {
+  list: (p: CompanyUserQuery) => api<Paged<CompanyUser>>(`/api/company-users${qs(p)}`),
+  get: (id: number) => api<CompanyUser>(`/api/company-users/${id}`),
+  assign: (d: { companyId: number; userId: number; isActive: boolean; isPrimaryCompany: boolean }) => api<CompanyUser>('/api/company-users', { method: 'POST', json: d }),
+  update: (id: number, d: { isActive: boolean; isPrimaryCompany: boolean }) => api<CompanyUser>(`/api/company-users/${id}`, { method: 'PUT', json: d }),
+  unassign: (id: number) => api<void>(`/api/company-users/${id}`, { method: 'DELETE' }),
+  forUser: (userId: number) => api<UserCompany[]>(`/api/users/${userId}/companies`),
 }
