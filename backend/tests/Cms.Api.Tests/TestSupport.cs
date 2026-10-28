@@ -36,9 +36,19 @@ public class CmsFactory : WebApplicationFactory<Program>
 }
 
 public record AuthDto(string AccessToken, DateTime ExpiresAt, string RefreshToken, UserInfo User);
-public record UserInfo(int Id, string Email, string DisplayName, string Role, bool IsActive);
+public record UserInfo(int Id, string Email, string Username, string FirstName, string LastName, string DisplayName, string? Phone, string Role, bool IsActive,
+    int? CompanyId, string? CompanyName, DateTime? LastLoginAt, DateTime CreatedAt, DateTime UpdatedAt, int? CreatedById, int? UpdatedById);
+public record CompanyInfo(int CompanyId, string CompanyCode, string CompanyName, string? Email, string? Phone, string? Website, string? AddressLine1,
+    string? AddressLine2, string? City, string? State, string? Country, string? PostalCode, int? LogoMediaId, string? LogoUrl, bool IsActive,
+    DateTime CreatedAt, DateTime UpdatedAt, int? CreatedById, string? CreatedByName, int? UpdatedById, string? UpdatedByName, int UserCount);
 public record ContentInfo(int Id, string Title, string Slug, string Content, string Status, Guid ConcurrencyStamp);
-public record Paged<T>(List<T> Items, int Total, int Page, int PageSize);
+public record Paged<T>(List<T> Items, int Total, int Page, int PageSize, int TotalPages = 0);
+
+public static class HttpClientExtensions
+{
+    public static Task<HttpResponseMessage> PatchJsonAsync<T>(this HttpClient c, string url, T body)
+        => c.PatchAsync(url, JsonContent.Create(body));
+}
 
 public abstract class ApiTestBase : IClassFixture<CmsFactory>
 {
@@ -68,9 +78,20 @@ public abstract class ApiTestBase : IClassFixture<CmsFactory>
     {
         var admin = await AdminClient();
         var email = $"editor{Guid.NewGuid():N}@test.local";
-        var r = await admin.PostAsJsonAsync("/api/users", new { email, displayName = "Ed", password = "Editor123!", role = "Editor" });
+        var r = await admin.PostAsJsonAsync("/api/users", NewUser(email));
         r.EnsureSuccessStatusCode();
         return await ClientFor(email, "Editor123!");
+    }
+
+    /// <summary>Request body for POST /api/users with sensible defaults.</summary>
+    protected static object NewUser(string email, string role = "Editor", string password = "Editor123!", string? username = null, int? companyId = null, string first = "Test", string last = "User")
+        => new { firstName = first, lastName = last, username = username ?? ("u" + Guid.NewGuid().ToString("N")[..12]), email, phone = (string?)null, password, role, companyId };
+
+    protected async Task<UserInfo> CreateUserAsync(HttpClient admin, string? email = null, string role = "Editor", string password = "Editor123!", int? companyId = null)
+    {
+        var r = await admin.PostAsJsonAsync("/api/users", NewUser(email ?? $"u{Guid.NewGuid():N}@test.local", role, password, companyId: companyId));
+        r.EnsureSuccessStatusCode();
+        return (await r.Content.ReadFromJsonAsync<UserInfo>())!;
     }
 
     protected static string Unique(string prefix = "t") => $"{prefix}-{Guid.NewGuid():N}"[..20];

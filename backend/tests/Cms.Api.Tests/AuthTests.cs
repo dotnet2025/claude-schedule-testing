@@ -98,7 +98,7 @@ public class AuthTests(CmsFactory f) : ApiTestBase(f)
     {
         var admin = await AdminClient();
         var email = $"pw{Guid.NewGuid():N}@test.local";
-        (await admin.PostAsJsonAsync("/api/users", new { email, displayName = "Pw", password = "Initial123!", role = "Editor" })).EnsureSuccessStatusCode();
+        (await admin.PostAsJsonAsync("/api/users", NewUser(email, password: "Initial123!"))).EnsureSuccessStatusCode();
         var c = await ClientFor(email, "Initial123!");
         Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsJsonAsync("/api/auth/change-password", new { currentPassword = "nope", newPassword = "NewPass123!" })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsJsonAsync("/api/auth/change-password", new { currentPassword = "Initial123!", newPassword = "short" })).StatusCode);

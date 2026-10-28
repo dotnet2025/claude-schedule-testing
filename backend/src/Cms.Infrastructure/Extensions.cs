@@ -34,6 +34,7 @@ public static class InfrastructureExtensions
         s.AddScoped<TaxonomyService>();
         s.AddScoped<MediaService>();
         s.AddScoped<UserService>();
+        s.AddScoped<CompanyService>();
         s.AddScoped<SettingsService>();
         s.AddScoped<DashboardService>();
         s.AddScoped<PublicService>();

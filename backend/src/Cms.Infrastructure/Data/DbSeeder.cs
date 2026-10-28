@@ -25,7 +25,8 @@ public static class DbSeeder
         var admin = await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
         if (admin is null)
         {
-            admin = new User { Email = email, DisplayName = "Administrator", Role = Roles.Admin };
+            var local = email.Contains('@') ? email[..email.IndexOf('@')] : email;
+            admin = new User { Email = email, Username = local.Length >= 3 ? local : "admin", FirstName = "System", LastName = "Administrator", DisplayName = "System Administrator", Role = Roles.Admin };
             admin.PasswordHash = hasher.HashPassword(admin, opt.AdminPassword);
             db.Users.Add(admin);
             await db.SaveChangesAsync(ct);

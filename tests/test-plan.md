@@ -16,3 +16,5 @@ Scenario classes covered: positive, negative, boundary, security, validation, in
 **Coverage target:** ≥80% line coverage of critical logic (auth, authorization, publishing, validation, file handling). Not yet measured. Measure with `dotnet test --collect:"XPlat Code Coverage"` and `npm run test:coverage`.
 
 **Deterministic by design:** tests use their own temp databases/upload dirs, no external services, and a fixed test signing key.
+
+**Company Master / User Master:** API tests in `CompanyMasterTests.cs` and `UserMasterTests.cs` (positive, negative, boundary, security, concurrency), UI tests in `frontend/src/features/masters/*.test.tsx` and `layouts/AdminLayout.test.tsx`, e2e in `tests/e2e/masters.spec.ts` and `permissions.spec.ts`. Cases: `test-cases/companies.md`, `test-cases/users.md`. Migration validation on a clean DB and on a DB at `InitialCreate` is manual (TC-USR-024, TC-CMP-018).

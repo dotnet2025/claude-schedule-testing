@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from '../routes/ProtectedRoute'
 import AdminLayout from '../layouts/AdminLayout'
 import PublicLayout from '../layouts/PublicLayout'
@@ -8,13 +8,10 @@ import ContentListPage from '../features/pages/ContentListPage'
 import ContentEditPage from '../features/pages/ContentEditPage'
 import MediaPage from '../features/media/MediaPage'
 import TaxonomyPage from '../features/categories/TaxonomyPage'
-import UsersPage from '../features/users/UsersPage'
+import UsersPage from '../features/masters/UsersPage'
+import CompaniesPage from '../features/masters/CompaniesPage'
 import SettingsPage from '../features/settings/SettingsPage'
-import ProfilePage from '../features/profile/ProfilePage'
-import ErrorPage from '../components/ErrorPage'
 import { BlogPage, CategoryPage, CmsPage, HomePage, NotFoundPage, PostDetailPage, SearchPage } from '../features/public/PublicPages'
-
-const AdminNotFound = () => <ErrorPage code={404} title="Page not found" message="The admin page you requested does not exist." home="/admin" homeLabel="Back to dashboard" />
 
 export default function App() {
   return (
@@ -32,12 +29,14 @@ export default function App() {
           <Route path="media" element={<MediaPage />} />
           <Route path="categories" element={<TaxonomyPage kind="categories" />} />
           <Route path="tags" element={<TaxonomyPage kind="tags" />} />
-          <Route path="profile" element={<ProfilePage />} />
           <Route element={<ProtectedRoute roles={['Admin']} />}>
-            <Route path="users" element={<UsersPage />} />
+            <Route path="masters" element={<Navigate to="/admin/masters/companies" replace />} />
+            <Route path="masters/companies" element={<CompaniesPage />} />
+            <Route path="masters/users" element={<UsersPage />} />
+            <Route path="users" element={<Navigate to="/admin/masters/users" replace />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
-          <Route path="*" element={<AdminNotFound />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
       <Route element={<PublicLayout />}>

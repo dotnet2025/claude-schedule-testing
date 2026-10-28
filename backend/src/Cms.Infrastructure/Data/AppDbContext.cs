@@ -7,6 +7,7 @@ namespace Cms.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IAppDbContext
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<Company> Companies => Set<Company>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Page> Pages => Set<Page>();
     public DbSet<Post> Posts => Set<Post>();
@@ -24,6 +25,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.DisplayName).HasMaxLength(100).IsRequired();
             e.Property(x => x.Role).HasMaxLength(20).IsRequired();
             e.Property(x => x.PasswordHash).IsRequired();
+            e.HasIndex(x => x.Username).IsUnique();
+            e.Property(x => x.Username).HasMaxLength(100).IsRequired();
+            e.Property(x => x.FirstName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.LastName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Phone).HasMaxLength(25);
+            e.HasOne(x => x.Company).WithMany(c => c.Users).HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.CreatedBy).WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.UpdatedBy).WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<Company>(e =>
+        {
+            e.HasKey(x => x.CompanyId);
+            e.HasIndex(x => x.CompanyCode).IsUnique();
+            e.Property(x => x.CompanyCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.CompanyName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.Property(x => x.Phone).HasMaxLength(25);
+            e.Property(x => x.Website).HasMaxLength(500);
+            e.Property(x => x.AddressLine1).HasMaxLength(250);
+            e.Property(x => x.AddressLine2).HasMaxLength(250);
+            e.Property(x => x.City).HasMaxLength(100);
+            e.Property(x => x.State).HasMaxLength(100);
+            e.Property(x => x.Country).HasMaxLength(100);
+            e.Property(x => x.PostalCode).HasMaxLength(20);
+            e.HasOne(x => x.LogoMedia).WithMany().HasForeignKey(x => x.LogoMediaId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.CreatedBy).WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.UpdatedBy).WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.SetNull);
         });
         b.Entity<RefreshToken>(e =>
         {

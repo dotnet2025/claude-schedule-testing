@@ -39,10 +39,38 @@ public class MediaController(MediaService svc) : ControllerBase
 [ApiController, Route("api/users"), Authorize(Policy = Policies.AdminOnly)]
 public class UsersController(UserService svc) : ControllerBase
 {
-    [HttpGet] public Task<PagedResult<UserDto>> List(string? search, int page = 1, int pageSize = 10, CancellationToken ct = default) => svc.ListAsync(search, page, pageSize, ct);
-    [HttpPost] public async Task<ActionResult<UserDto>> Create(CreateUserRequest r, CancellationToken ct) => StatusCode(201, await svc.CreateAsync(r, ct));
-    [HttpPut("{id:int}")] public Task<UserDto> Update(int id, UpdateUserRequest r, CancellationToken ct) => svc.UpdateAsync(id, r, ct);
+    [HttpGet]
+    public Task<PagedResult<UserDto>> List(string? search, string? role, bool? isActive, int? companyId, string? sortBy, string? sortDir,
+        int page = 1, int pageSize = 10, CancellationToken ct = default) => svc.ListAsync(search, role, isActive, companyId, sortBy, sortDir, page, pageSize, ct);
+    [HttpGet("{id:int}")] public Task<UserDto> Get(int id, CancellationToken ct) => svc.GetAsync(id, ct);
+    [HttpPost] public async Task<ActionResult<UserDto>> Create(CreateUserRequest r, CancellationToken ct)
+    {
+        var dto = await svc.CreateAsync(r, User.GetUserId(), ct);
+        return CreatedAtAction(nameof(Get), new { id = dto.Id }, dto);
+    }
+    [HttpPut("{id:int}")] public Task<UserDto> Update(int id, UpdateUserRequest r, CancellationToken ct) => svc.UpdateAsync(id, r, User.GetUserId(), ct);
+    [HttpPatch("{id:int}/status")] public Task<UserDto> SetStatus(int id, SetStatusRequest r, CancellationToken ct) => svc.SetStatusAsync(id, r.IsActive, User.GetUserId(), ct);
+    [HttpPatch("{id:int}/role")] public Task<UserDto> SetRole(int id, SetRoleRequest r, CancellationToken ct) => svc.SetRoleAsync(id, r.Role, User.GetUserId(), ct);
+    [HttpPost("{id:int}/reset-password")]
+    public async Task<IActionResult> ResetPassword(int id, ResetPasswordRequest r, CancellationToken ct) { await svc.ResetPasswordAsync(id, r.NewPassword, User.GetUserId(), ct); return NoContent(); }
     [HttpDelete("{id:int}")] public async Task<IActionResult> Delete(int id, CancellationToken ct) { await svc.DeleteAsync(id, User.GetUserId(), ct); return NoContent(); }
+}
+
+[ApiController, Route("api/companies"), Authorize(Policy = Policies.AdminOnly)]
+public class CompaniesController(CompanyService svc) : ControllerBase
+{
+    [HttpGet]
+    public Task<PagedResult<CompanyDto>> List(string? search, bool? isActive, string? sortBy, string? sortDir, int page = 1, int pageSize = 10, CancellationToken ct = default)
+        => svc.ListAsync(search, isActive, sortBy, sortDir, page, pageSize, ct);
+    [HttpGet("{id:int}")] public Task<CompanyDto> Get(int id, CancellationToken ct) => svc.GetAsync(id, ct);
+    [HttpPost] public async Task<ActionResult<CompanyDto>> Create(CompanyRequest r, CancellationToken ct)
+    {
+        var dto = await svc.CreateAsync(r, User.GetUserId(), ct);
+        return CreatedAtAction(nameof(Get), new { id = dto.CompanyId }, dto);
+    }
+    [HttpPut("{id:int}")] public Task<CompanyDto> Update(int id, CompanyRequest r, CancellationToken ct) => svc.UpdateAsync(id, r, User.GetUserId(), ct);
+    [HttpPatch("{id:int}/status")] public Task<CompanyDto> SetStatus(int id, SetStatusRequest r, CancellationToken ct) => svc.SetStatusAsync(id, r.IsActive, User.GetUserId(), ct);
+    [HttpDelete("{id:int}")] public async Task<IActionResult> Delete(int id, CancellationToken ct) { await svc.DeleteAsync(id, ct); return NoContent(); }
 }
 
 [ApiController, Route("api/settings")]

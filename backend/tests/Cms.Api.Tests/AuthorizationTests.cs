@@ -16,7 +16,7 @@ public class AuthorizationTests(CmsFactory f) : ApiTestBase(f)
     {
         var ed = await EditorClient();
         Assert.Equal(HttpStatusCode.Forbidden, (await ed.GetAsync("/api/users")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await ed.PostAsJsonAsync("/api/users", new { email = "x@y.zz", displayName = "x", password = "Passw0rd!", role = "Admin" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await ed.PostAsJsonAsync("/api/users", NewUser("x@y.zz", "Admin", "Passw0rd!"))).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await ed.DeleteAsync("/api/users/1")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await ed.PutAsJsonAsync("/api/settings", new { websiteName = "Hacked" })).StatusCode);
     }
@@ -61,20 +61,20 @@ public class AuthorizationTests(CmsFactory f) : ApiTestBase(f)
         var otherAdmins = all!.Items.Count(u => u.Role == "Admin" && u.IsActive && u.Id != me.Id);
         if (otherAdmins == 0)
         {
-            Assert.Equal(HttpStatusCode.Conflict, (await admin.PutAsJsonAsync($"/api/users/{me.Id}", new { displayName = "Admin", role = "Editor", isActive = true })).StatusCode);
-            Assert.Equal(HttpStatusCode.Conflict, (await admin.PutAsJsonAsync($"/api/users/{me.Id}", new { displayName = "Admin", role = "Admin", isActive = false })).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, (await admin.PatchJsonAsync($"/api/users/{me.Id}/role", new { role = "Editor" })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PatchJsonAsync($"/api/users/{me.Id}/status", new { isActive = false })).StatusCode);
         }
         Assert.Equal(HttpStatusCode.BadRequest, (await admin.DeleteAsync($"/api/users/{me.Id}")).StatusCode);
 
         var email = $"u{Guid.NewGuid():N}@test.local";
-        var created = await admin.PostAsJsonAsync("/api/users", new { email, displayName = "U", password = "Passw0rd!", role = "Editor" });
+        var created = await admin.PostAsJsonAsync("/api/users", NewUser(email, password: "Passw0rd!"));
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         Assert.DoesNotContain("password", (await created.Content.ReadAsStringAsync()), StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/api/users", new { email, displayName = "U", password = "Passw0rd!", role = "Editor" })).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/users", new { email = "not-an-email", displayName = "U", password = "Passw0rd!", role = "Editor" })).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/users", new { email = "r@test.local", displayName = "U", password = "Passw0rd!", role = "Root" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/api/users", NewUser(email, password: "Passw0rd!"))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/users", NewUser("not-an-email", password: "Passw0rd!"))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/api/users", NewUser("r@test.local", "Root", "Passw0rd!"))).StatusCode);
         var id = (await created.Content.ReadFromJsonAsync<UserInfo>())!.Id;
-        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/api/users/{id}", new { displayName = "U2", role = "Editor", isActive = false })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PatchJsonAsync($"/api/users/{id}/status", new { isActive = false })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await Anonymous().PostAsJsonAsync("/api/auth/login", new { email, password = "Passw0rd!" })).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await admin.DeleteAsync($"/api/users/{id}")).StatusCode);
     }

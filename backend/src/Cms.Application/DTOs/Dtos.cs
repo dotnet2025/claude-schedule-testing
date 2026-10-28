@@ -2,22 +2,63 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Cms.Application.DTOs;
 
-public record LoginRequest([Required, EmailAddress, MaxLength(256)] string Email, [Required, MaxLength(256)] string Password);
+/// <summary>Validates that an optional string is an absolute http/https URL.</summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.Field)]
+public sealed class HttpUrlAttribute : ValidationAttribute
+{
+    public override bool IsValid(object? value)
+        => value is null or "" || (value is string s && Uri.TryCreate(s.Trim(), UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps));
+}
+
+/// <summary>Sign in with e-mail OR username. <c>Email</c> may carry either; <c>Username</c> is an explicit alias.</summary>
+public record LoginRequest([MaxLength(256)] string? Email, [MaxLength(100)] string? Username, [Required, MaxLength(256)] string Password);
 public record RefreshRequest(string? RefreshToken);
 public record ChangePasswordRequest([Required] string CurrentPassword, [Required, MinLength(8), MaxLength(128)] string NewPassword);
-public record UserDto(int Id, string Email, string DisplayName, string Role, bool IsActive, DateTime CreatedAt);
+public record UserDto(int Id, string Email, string Username, string FirstName, string LastName, string DisplayName, string? Phone,
+    string Role, bool IsActive, int? CompanyId, string? CompanyName, DateTime? LastLoginAt, DateTime CreatedAt, DateTime UpdatedAt,
+    int? CreatedById, int? UpdatedById);
 public record AuthResponse(string AccessToken, DateTime ExpiresAt, string RefreshToken, UserDto User);
 
 public record CreateUserRequest(
+    [Required, StringLength(100, MinimumLength = 1)] string FirstName,
+    [Required, StringLength(100, MinimumLength = 1)] string LastName,
+    [Required, StringLength(100, MinimumLength = 3), RegularExpression(@"^[A-Za-z0-9._\-]+$", ErrorMessage = "Username may contain letters, digits, '.', '_' and '-' only.")] string Username,
     [Required, EmailAddress, MaxLength(256)] string Email,
-    [Required, StringLength(100, MinimumLength = 1)] string DisplayName,
+    [MaxLength(25)] string? Phone,
     [Required, MinLength(8), MaxLength(128)] string Password,
-    [Required] string Role);
-public record UpdateUserRequest(
-    [Required, StringLength(100, MinimumLength = 1)] string DisplayName,
     [Required] string Role,
-    bool IsActive,
-    [MinLength(8), MaxLength(128)] string? NewPassword);
+    bool? IsActive,
+    int? CompanyId);
+/// <summary>Profile data only. Role, status and password are changed through their dedicated admin endpoints.</summary>
+public record UpdateUserRequest(
+    [Required, StringLength(100, MinimumLength = 1)] string FirstName,
+    [Required, StringLength(100, MinimumLength = 1)] string LastName,
+    [Required, StringLength(100, MinimumLength = 3), RegularExpression(@"^[A-Za-z0-9._\-]+$", ErrorMessage = "Username may contain letters, digits, '.', '_' and '-' only.")] string Username,
+    [Required, EmailAddress, MaxLength(256)] string Email,
+    [MaxLength(25)] string? Phone,
+    int? CompanyId);
+public record SetStatusRequest(bool IsActive);
+public record SetRoleRequest([Required] string Role);
+public record ResetPasswordRequest([Required, MinLength(8), MaxLength(128)] string NewPassword);
+
+public record CompanyRequest(
+    [Required, StringLength(30, MinimumLength = 1)] string CompanyCode,
+    [Required, StringLength(200, MinimumLength = 1)] string CompanyName,
+    [EmailAddress, MaxLength(256)] string? Email,
+    [MaxLength(25)] string? Phone,
+    [HttpUrl(ErrorMessage = "Website must be a valid http or https URL."), MaxLength(500)] string? Website,
+    [MaxLength(250)] string? AddressLine1,
+    [MaxLength(250)] string? AddressLine2,
+    [MaxLength(100)] string? City,
+    [MaxLength(100)] string? State,
+    [MaxLength(100)] string? Country,
+    [MaxLength(20)] string? PostalCode,
+    int? LogoMediaId,
+    bool? IsActive);
+public record CompanyDto(int CompanyId, string CompanyCode, string CompanyName, string? Email, string? Phone, string? Website,
+    string? AddressLine1, string? AddressLine2, string? City, string? State, string? Country, string? PostalCode,
+    int? LogoMediaId, string? LogoUrl, bool IsActive, DateTime CreatedAt, DateTime UpdatedAt,
+    int? CreatedById, string? CreatedByName, int? UpdatedById, string? UpdatedByName, int UserCount);
 
 public record ContentRequest(
     [Required, StringLength(200, MinimumLength = 1)] string Title,

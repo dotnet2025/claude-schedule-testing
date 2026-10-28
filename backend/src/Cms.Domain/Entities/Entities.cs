@@ -6,12 +6,54 @@ public class User
 {
     public int Id { get; set; }
     public string Email { get; set; } = "";
+    /// <summary>Unique, stored lower-case (case-insensitive uniqueness).</summary>
+    public string Username { get; set; } = "";
+    public string FirstName { get; set; } = "";
+    public string LastName { get; set; } = "";
+    /// <summary>Derived from FirstName + LastName on every write; kept as a column so author names stay queryable.</summary>
     public string DisplayName { get; set; } = "";
+    public string? Phone { get; set; }
     public string PasswordHash { get; set; } = "";
     public string Role { get; set; } = Constants.Roles.Editor;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastLoginAt { get; set; }
+    public int? CompanyId { get; set; }
+    public Company? Company { get; set; }
+    public int? CreatedById { get; set; }
+    public User? CreatedBy { get; set; }
+    public int? UpdatedById { get; set; }
+    public User? UpdatedBy { get; set; }
     public List<RefreshToken> RefreshTokens { get; set; } = [];
+
+    public static string BuildDisplayName(string first, string last) => $"{first.Trim()} {last.Trim()}".Trim();
+}
+
+public class Company
+{
+    public int CompanyId { get; set; }
+    public string CompanyCode { get; set; } = "";
+    public string CompanyName { get; set; } = "";
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Website { get; set; }
+    public string? AddressLine1 { get; set; }
+    public string? AddressLine2 { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? Country { get; set; }
+    public string? PostalCode { get; set; }
+    public int? LogoMediaId { get; set; }
+    public MediaFile? LogoMedia { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public int? CreatedById { get; set; }
+    public User? CreatedBy { get; set; }
+    public int? UpdatedById { get; set; }
+    public User? UpdatedBy { get; set; }
+    public List<User> Users { get; set; } = [];
 }
 
 public class RefreshToken

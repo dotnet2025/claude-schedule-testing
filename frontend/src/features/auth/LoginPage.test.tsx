@@ -10,17 +10,13 @@ import LoginPage from './LoginPage'
 const ui = <Routes><Route path="/login" element={<LoginPage />} /><Route path="/admin" element={<h1>Admin home</h1>} /></Routes>
 
 describe('LoginPage', () => {
-  it('shows validation errors for empty and malformed input without calling the API', async () => {
+  it('shows validation errors for empty input without calling the API', async () => {
     let called = false
     server.use(noSession, http.post('*/api/auth/login', () => { called = true; return HttpResponse.json(authBody(admin)) }))
     renderApp(ui, '/login')
     await userEvent.click(await screen.findByRole('button', { name: /sign in/i }))
-    expect(await screen.findByText('Email is required')).toBeInTheDocument()
+    expect(await screen.findByText('Email or username is required')).toBeInTheDocument()
     expect(screen.getByText('Password is required')).toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText(/email/i), 'not-an-email')
-    await userEvent.type(screen.getByLabelText(/password/i), 'x')
-    await userEvent.click(screen.getByRole('button', { name: /sign in/i }))
-    expect(await screen.findByText('Enter a valid email address')).toBeInTheDocument()
     expect(called).toBe(false)
   })
 
@@ -35,6 +31,17 @@ describe('LoginPage', () => {
     await userEvent.type(screen.getByLabelText(/password/i), 'secret123')
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }))
     expect(await screen.findByText('Admin home')).toBeInTheDocument()
+  })
+
+  it('accepts a username in place of an email', async () => {
+    let body: { email: string } | null = null
+    server.use(noSession, http.post('*/api/auth/login', async ({ request }) => { body = (await request.json()) as { email: string }; return HttpResponse.json(authBody(admin)) }))
+    renderApp(ui, '/login')
+    await userEvent.type(await screen.findByLabelText(/email or username/i), 'admin.user')
+    await userEvent.type(screen.getByLabelText(/password/i), 'secret123')
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }))
+    expect(await screen.findByText('Admin home')).toBeInTheDocument()
+    expect(body).toEqual({ email: 'admin.user', password: 'secret123' })
   })
 
   it('shows the server error for invalid credentials and stays on the page', async () => {

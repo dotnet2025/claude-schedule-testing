@@ -35,6 +35,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidateLifetime = true, ClockSkew = TimeSpan.FromSeconds(10),
         RoleClaimType = System.Security.Claims.ClaimTypes.Role, NameClaimType = System.Security.Claims.ClaimTypes.Name,
     };
+    // Reject access tokens of users that were deactivated, deleted or whose role changed after the token was issued.
+    o.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async ctx =>
+        {
+            var idClaim = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var role = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var ok = int.TryParse(idClaim, out var uid)
+                && await db.Users.AsNoTracking().AnyAsync(u => u.Id == uid && u.IsActive && u.Role == role, ctx.HttpContext.RequestAborted);
+            if (!ok) ctx.Fail("User is inactive, deleted or has a different role.");
+        },
+    };
 });
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.AdminOnly, p => p.RequireRole(Roles.Admin))
@@ -72,9 +85,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
     {
-        // Testing-only fallback until the initial migration is committed (see docs/known-issues.md).
-        if (app.Environment.IsEnvironment("Testing") && !db.Database.GetMigrations().Any()) await db.Database.EnsureCreatedAsync();
-        else await db.Database.MigrateAsync();
+        await db.Database.MigrateAsync();
     }
     await DbSeeder.SeedAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>(),
         scope.ServiceProvider.GetRequiredService<SeedOptions>());

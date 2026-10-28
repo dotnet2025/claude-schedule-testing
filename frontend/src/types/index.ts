@@ -1,5 +1,19 @@
 export type Role = 'Admin' | 'Editor'
-export interface User { id: number; email: string; displayName: string; role: Role; isActive: boolean; createdAt?: string }
+export interface User {
+  id: number; email: string; username?: string; firstName?: string; lastName?: string; displayName: string; phone?: string | null
+  role: Role; isActive: boolean; companyId?: number | null; companyName?: string | null; lastLoginAt?: string | null
+  createdAt?: string; updatedAt?: string; createdById?: number | null; updatedById?: number | null
+}
+export interface UserInput {
+  firstName: string; lastName: string; username: string; email: string; phone?: string | null; companyId?: number | null
+}
+export interface Company {
+  companyId: number; companyCode: string; companyName: string; email?: string | null; phone?: string | null; website?: string | null
+  addressLine1?: string | null; addressLine2?: string | null; city?: string | null; state?: string | null; country?: string | null; postalCode?: string | null
+  logoMediaId?: number | null; logoUrl?: string | null; isActive: boolean; createdAt: string; updatedAt: string
+  createdById?: number | null; createdByName?: string | null; updatedById?: number | null; updatedByName?: string | null; userCount: number
+}
+export type CompanyInput = Omit<Company, 'companyId' | 'logoUrl' | 'createdAt' | 'updatedAt' | 'createdById' | 'createdByName' | 'updatedById' | 'updatedByName' | 'userCount'>
 export interface AuthResponse { accessToken: string; expiresAt: string; refreshToken: string; user: User }
 export interface Paged<T> { items: T[]; total: number; page: number; pageSize: number; totalPages: number }
 export interface Taxonomy { id: number; name: string; slug: string; description?: string | null; postCount: number }

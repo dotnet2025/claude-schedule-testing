@@ -6,6 +6,7 @@ namespace Cms.Application.Interfaces;
 public interface IAppDbContext
 {
     DbSet<User> Users { get; }
+    DbSet<Company> Companies { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<Page> Pages { get; }
     DbSet<Post> Posts { get; }
